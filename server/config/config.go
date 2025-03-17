@@ -74,10 +74,14 @@ func initializeDatabase(dbPath string) (*gorm.DB, error) {
 }
 
 func runMigrations(db *gorm.DB) error {
-	err := db.AutoMigrate(&models.Agent{})
-	if err != nil {
+	if err := db.AutoMigrate(&models.Command{}); err != nil {
 		return err
 	}
+
+	if err := db.AutoMigrate(&models.Agent{}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
