@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/RabbITCybErSeC/Bacon/server/models"
+	"github.com/RabbITCybErSeC/BaconC2/server/models"
 
-	"github.com/RabbITCybErSeC/Bacon/server/queue"
-	"github.com/RabbITCybErSeC/Bacon/server/store"
+	"github.com/RabbITCybErSeC/BaconC2/server/queue"
+	"github.com/RabbITCybErSeC/BaconC2/server/store"
 	"github.com/gin-gonic/gin"
 )
 

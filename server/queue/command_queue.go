@@ -3,7 +3,7 @@ package queue
 import (
 	"fmt"
 
-	"github.com/RabbITCybErSeC/Bacon/server/models"
+	"github.com/RabbITCybErSeC/BaconC2/server/models"
 )
 
 type CommandQueue interface {

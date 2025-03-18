@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/RabbITCybErSeC/Bacon/server/db"
-	"github.com/RabbITCybErSeC/Bacon/server/models"
+	"github.com/RabbITCybErSeC/BaconC2/server/db"
+	"github.com/RabbITCybErSeC/BaconC2/server/models"
 	"gorm.io/gorm"
 )
 

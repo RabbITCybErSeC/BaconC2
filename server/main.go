@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 
-	"github.com/RabbITCybErSeC/Bacon/server/api"
-	"github.com/RabbITCybErSeC/Bacon/server/config"
-	"github.com/RabbITCybErSeC/Bacon/server/db"
-	"github.com/RabbITCybErSeC/Bacon/server/queue"
-	"github.com/RabbITCybErSeC/Bacon/server/service"
-	"github.com/RabbITCybErSeC/Bacon/server/store"
-	"github.com/RabbITCybErSeC/Bacon/server/transport"
+	"github.com/RabbITCybErSeC/BaconC2/server/api"
+	"github.com/RabbITCybErSeC/BaconC2/server/config"
+	"github.com/RabbITCybErSeC/BaconC2/server/db"
+	"github.com/RabbITCybErSeC/BaconC2/server/queue"
+	"github.com/RabbITCybErSeC/BaconC2/server/service"
+	"github.com/RabbITCybErSeC/BaconC2/server/store"
+	"github.com/RabbITCybErSeC/BaconC2/server/transport"
 	"github.com/gin-gonic/gin"
 )
 

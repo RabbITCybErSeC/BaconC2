@@ -3,7 +3,7 @@ package queue
 import (
 	"sync"
 
-	"github.com/RabbITCybErSeC/Bacon/server/models"
+	"github.com/RabbITCybErSeC/BaconC2/server/models"
 )
 
 type MemoryCommandQueue struct {

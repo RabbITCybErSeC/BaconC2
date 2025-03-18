@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/RabbITCybErSeC/Bacon/server/api"
-	"github.com/RabbITCybErSeC/Bacon/server/config"
+	"github.com/RabbITCybErSeC/BaconC2/server/api"
+	"github.com/RabbITCybErSeC/BaconC2/server/config"
 )
 
 type HTTPTransport struct {

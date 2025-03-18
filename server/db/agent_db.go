@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/RabbITCybErSeC/Bacon/server/models"
+	"github.com/RabbITCybErSeC/BaconC2/server/models"
 	"gorm.io/gorm"
 )
 

@@ -1,4 +1,4 @@
-module github.com/RabbITCybErSeC/Bacon/server
+module github.com/RabbITCybErSeC/BaconC2/server
 
 go 1.23.0
 
