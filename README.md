@@ -1,6 +1,6 @@
 # BaconC2
 
-![alt text](images/baconc2_withoutbackground.png | width=100)
+![alt text](images/baconc2_withoutbackground.png|width=100)
 
 Bacon is a small C2 framework, which aims to support stealthy communication techniques.
 
