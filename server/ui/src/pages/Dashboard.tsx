@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Home, Users, Shield, Briefcase, Calendar, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Home, Users, Shield, Briefcase, Calendar, BookOpen, Menu, Sun, Moon } from 'lucide-react';
 import { Breadcrumb } from '../components/layout/Breadcrumb';
 import { SidebarItem } from '../components/layout/SidebarItem';
 import { SidebarAccordion } from '../components/layout/SidebarAccordion';
@@ -7,42 +7,87 @@ import { UserProfile } from '../components/user/UserProfile';
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    // Check if user has a preference stored in localStorage
+    const savedTheme = localStorage.getItem('theme');
+    // Check if user prefers dark mode via system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    return savedTheme === 'dark' || (!savedTheme && prefersDark);
+  });
   
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+  
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+  
+  // Update body classes when sidebar state or dark mode changes
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add('sidebar-open');
+    } else {
+      document.body.classList.remove('sidebar-open');
+    }
+    
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [sidebarOpen, darkMode]);
 
   return (
-    <div className="bg-gray-50 transition-all duration-300 lg:hs-overlay-layout-open:ps-65">
+    <div className={`bg-stone-50 dark:bg-stone-900 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : ''}`}>
       {/* Main Content */}
       <main id="content">
         {/* Breadcrumb */}
-        <div className="sticky top-0 inset-x-0 z-20 bg-white border-y border-gray-200 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-2">
-            {/* Navigation Toggle */}
-            <button 
-              type="button" 
-              className="size-8 flex justify-center items-center gap-x-2 border border-gray-200 text-gray-700 hover:text-gray-500 rounded-lg focus:outline-hidden focus:text-gray-500 disabled:opacity-50 disabled:pointer-events-none" 
-              aria-haspopup="dialog"
-              aria-expanded={sidebarOpen}
-              aria-controls="hs-application-sidebar" 
-              aria-label="Toggle navigation" 
-              onClick={toggleSidebar}
-              data-hs-overlay="#hs-application-sidebar"
+        <div className="sticky top-0 inset-x-0 z-20 bg-white dark:bg-stone-800 border-y border-stone-200 dark:border-stone-700 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center">
+              {/* Navigation Toggle */}
+              <button 
+                type="button" 
+                className="size-8 flex justify-center items-center gap-x-2 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:text-stone-500 dark:hover:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 disabled:opacity-50 disabled:pointer-events-none" 
+                aria-expanded={sidebarOpen}
+                aria-controls="hs-application-sidebar" 
+                aria-label="Toggle navigation" 
+                onClick={toggleSidebar}
+              >
+                <span className="sr-only">Toggle Navigation</span>
+                <Menu className="shrink-0 size-4" />
+              </button>
+              {/* End Navigation Toggle */}
+              
+              {/* Breadcrumb */}
+              <Breadcrumb 
+                items={[
+                  { label: 'Application Layout', href: '/' },
+                  { label: 'Dashboard', href: '#', current: true }
+                ]} 
+              />
+              {/* End Breadcrumb */}
+            </div>
+            
+            {/* Dark Mode Toggle */}
+            <button
+              type="button"
+              className="size-8 flex justify-center items-center gap-x-2 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:text-stone-500 dark:hover:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 disabled:opacity-50 disabled:pointer-events-none"
+              aria-label="Toggle dark mode"
+              onClick={toggleDarkMode}
             >
-              <span className="sr-only">Toggle Navigation</span>
-              <svg className="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m8 9 3 3-3 3"/></svg>
+              <span className="sr-only">Toggle Dark Mode</span>
+              {darkMode ? (
+                <Sun className="shrink-0 size-4" />
+              ) : (
+                <Moon className="shrink-0 size-4" />
+              )}
             </button>
-            {/* End Navigation Toggle */}
-
-            {/* Breadcrumb */}
-            <Breadcrumb 
-              items={[
-                { label: 'Application Layout', href: '/' },
-                { label: 'Dashboard', href: '#', current: true }
-              ]} 
-            />
-            {/* End Breadcrumb */}
+            {/* End Dark Mode Toggle */}
           </div>
         </div>
         {/* End Breadcrumb */}
@@ -50,33 +95,29 @@ export default function Dashboard() {
         {/* Sidebar */}
         <div 
           id="hs-application-sidebar" 
-          className={`hs-overlay [--body-scroll:true] lg:[--overlay-backdrop:false] [--is-layout-affect:true] [--auto-close:lg]
-            hs-overlay-open:translate-x-0
-            -translate-x-full transition-all duration-300 transform
-            w-65 h-full
-            fixed inset-y-0 start-0 z-60
-            bg-white border-e border-gray-200
-            ${sidebarOpen ? 'translate-x-0' : ''}`}
-          role="dialog" 
-          tabIndex={-1} 
+          className={`transition-all duration-300 transform
+            w-64 h-full
+            fixed inset-y-0 start-0 z-50
+            bg-white dark:bg-stone-800 border-e border-stone-200 dark:border-stone-700
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+          role="navigation" 
           aria-label="Sidebar"
         >
           <div className="relative flex flex-col h-full max-h-full">
             <div className="px-6 pt-4 flex items-center">
               {/* Logo */}
-              <a className="flex-none rounded-xl text-xl inline-block font-semibold focus:outline-hidden focus:opacity-80" href="#" aria-label="BaconC2">
-                <span className="text-blue-600">BaconC2</span>
-              </a>
+              <a className="flex-none rounded-xl text-xl inline-block font-semibold focus:outline-none focus:opacity-80" href="#" aria-label="BaconC2">
+                <span className="text-stone-600 dark:text-stone-400">BaconC2</span>           </a>
               {/* End Logo */}
             </div>
 
             {/* Content */}
-            <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300">
+            <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-stone-100 dark:bg-stone-800 [&::-webkit-scrollbar-thumb]:bg-stone-300 dark:[&::-webkit-scrollbar-thumb]:bg-stone-600">
               <nav className="hs-accordion-group p-3 w-full flex flex-col flex-wrap" data-hs-accordion-always-open>
                 <ul className="flex flex-col space-y-1">
                   <li>
                     <SidebarItem 
-                      icon={<Home size={16} />}
+                      icon={<Home size={16} className="text-stone-600 dark:text-stone-400" />}
                       label="Dashboard"
                       href="#"
                       active={true}
@@ -85,7 +126,7 @@ export default function Dashboard() {
 
                   <SidebarAccordion 
                     id="users-accordion"
-                    icon={<Users size={16} />}
+                    icon={<Users size={16} className="text-stone-600 dark:text-stone-400" />}
                     label="Users"
                     items={[
                       { 
@@ -111,7 +152,7 @@ export default function Dashboard() {
 
                   <SidebarAccordion 
                     id="account-accordion"
-                    icon={<Shield size={16} />}
+                    icon={<Shield size={16} className="text-stone-600 dark:text-stone-400" />}
                     label="Account"
                     items={[
                       { label: "Link 1", href: "#" },
@@ -122,7 +163,7 @@ export default function Dashboard() {
 
                   <SidebarAccordion 
                     id="projects-accordion"
-                    icon={<Briefcase size={16} />}
+                    icon={<Briefcase size={16} className="text-stone-600 dark:text-stone-400" />}
                     label="Projects"
                     items={[
                       { label: "Link 1", href: "#" },
@@ -133,7 +174,7 @@ export default function Dashboard() {
 
                   <li>
                     <SidebarItem 
-                      icon={<Calendar size={16} />}
+                      icon={<Calendar size={16} className="text-stone-600 dark:text-stone-400" />}
                       label="Calendar"
                       href="#"
                     />
@@ -141,7 +182,7 @@ export default function Dashboard() {
                   
                   <li>
                     <SidebarItem 
-                      icon={<BookOpen size={16} />}
+                      icon={<BookOpen size={16} className="text-stone-600 dark:text-stone-400" />}
                       label="Documentation"
                       href="#"
                     />
@@ -152,7 +193,7 @@ export default function Dashboard() {
             {/* End Content */}
             
             {/* User Profile */}
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-stone-200 dark:border-stone-700">
               <UserProfile 
                 username="admin" 
                 organization="Administrator"
@@ -165,27 +206,27 @@ export default function Dashboard() {
         {/* End Sidebar */}
 
         {/* Content */}
-        <div className="w-full lg:ps-64">
+        <div className="w-full transition-all duration-300">
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Dashboard Content Here */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h2 className="text-lg font-semibold mb-4 text-gray-800">Welcome to BaconC2</h2>
-                <p className="text-gray-600">
+              <div className="bg-white dark:bg-stone-800 p-6 rounded-lg shadow-sm border border-stone-200 dark:border-stone-700">
+                <h2 className="text-lg font-semibold mb-4 text-stone-800 dark:text-white">Welcome to BaconC2</h2>
+                <p className="text-stone-600 dark:text-stone-300">
                   This is your new dashboard. Start adding your content here.
                 </p>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h2 className="text-lg font-semibold mb-4 text-gray-800">Agent Statistics</h2>
-                <p className="text-gray-600">
+              <div className="bg-white dark:bg-stone-800 p-6 rounded-lg shadow-sm border border-stone-200 dark:border-stone-700">
+                <h2 className="text-lg font-semibold mb-4 text-stone-800 dark:text-white">Agent Statistics</h2>
+                <p className="text-stone-600 dark:text-stone-300">
                   View your agent statistics and metrics here.
                 </p>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h2 className="text-lg font-semibold mb-4 text-gray-800">Command History</h2>
-                <p className="text-gray-600">
+              <div className="bg-white dark:bg-stone-800 p-6 rounded-lg shadow-sm border border-stone-200 dark:border-stone-700">
+                <h2 className="text-lg font-semibold mb-4 text-stone-800 dark:text-white">Command History</h2>
+                <p className="text-stone-600 dark:text-stone-300">
                   Your recent command history will appear here.
                 </p>
               </div>

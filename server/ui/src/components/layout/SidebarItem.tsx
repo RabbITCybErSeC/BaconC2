@@ -17,8 +17,8 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
     <a 
       className={`flex items-center gap-x-3.5 py-2 px-2.5 text-sm rounded-lg focus:outline-hidden 
       ${active 
-        ? 'bg-gray-100 text-gray-800'
-        : 'text-gray-700 hover:bg-gray-100 focus:bg-gray-100'
+        ? 'bg-stone-100 text-stone-800'
+        : 'text-stone-700 hover:bg-stone-100 focus:bg-stone-100'
       }`}
       href={href}
     >

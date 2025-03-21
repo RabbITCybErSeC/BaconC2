@@ -37,7 +37,7 @@ export const SidebarAccordion: React.FC<SidebarAccordionProps> = ({
               <li key={item.id || `${id}-sub-${index}`} className="hs-accordion">
                 <button 
                   type="button" 
-                  className="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-gray-700 rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100"
+                  className="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-stone-700 rounded-lg hover:bg-stone-100 focus:outline-hidden focus:bg-stone-100"
                   onClick={() => {
                     // Handle nested accordion
                   }}
@@ -57,7 +57,7 @@ export const SidebarAccordion: React.FC<SidebarAccordionProps> = ({
             return (
               <li key={`${id}-item-${index}`}>
                 <a 
-                  className="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-gray-700 rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100" 
+                  className="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-stone-700 rounded-lg hover:bg-stone-100 focus:outline-hidden focus:bg-stone-100" 
                   href={item.href || '#'}
                 >
                   {item.label}
@@ -74,7 +74,7 @@ export const SidebarAccordion: React.FC<SidebarAccordionProps> = ({
     <li className="hs-accordion">
       <button 
         type="button" 
-        className="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-gray-700 rounded-lg hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100"
+        className="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-stone-700 rounded-lg hover:bg-stone-100 focus:outline-hidden focus:bg-stone-100"
         onClick={toggleAccordion}
       >
         <span className="shrink-0 size-4">{icon}</span>
