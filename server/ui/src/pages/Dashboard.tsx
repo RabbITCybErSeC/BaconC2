@@ -192,14 +192,14 @@ export default function Dashboard() {
             </div>
             {/* End Content */}
             
-            {/* User Profile */}
+            {/* User Profile
             <div className="p-4 border-t border-stone-200 dark:border-stone-700">
               <UserProfile 
                 username="admin" 
                 organization="Administrator"
                 onLogout={() => window.location.href = '/'}
               />
-            </div>
+            </div> */}
             {/* End User Profile */}
           </div>
         </div>
