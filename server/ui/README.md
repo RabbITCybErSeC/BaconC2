@@ -1,1 +1,12 @@
-# BaconC2 UI
+# SOARCA-GUI V2
+
+```
+npm install
+npm run dev
+
+```
+
+```
+
+
+```
