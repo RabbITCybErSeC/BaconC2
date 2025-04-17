@@ -10,16 +10,21 @@ import (
 )
 
 type ServerConfig struct {
-	DB         *gorm.DB
-	Port       string
-	Env        string
-	DBPath     string
-	MaxAgents  int
-	HTTPConfig HTTPConfig
-	UDPConfig  UDPConfig
+	DB              *gorm.DB
+	Port            string
+	Env             string
+	DBPath          string
+	MaxAgents       int
+	AgentHTTPConfig AgentHTTPConfig
+	FrontHTTPConfig FrontEndHTTPConfig
+	UDPConfig       UDPConfig
 }
 
-type HTTPConfig struct {
+type FrontEndHTTPConfig struct {
+	Port    int
+	Enabled bool
+}
+type AgentHTTPConfig struct {
 	Port    int
 	Enabled bool
 }
@@ -40,7 +45,7 @@ func NewServerConfig() *ServerConfig {
 		Env:       "development",
 		DBPath:    "agents.db",
 		MaxAgents: 100,
-		HTTPConfig: HTTPConfig{
+		FrontHTTPConfig: FrontEndHTTPConfig{
 			Port:    *httpPort,
 			Enabled: true, // Always enable HTTP for admin interface
 		},

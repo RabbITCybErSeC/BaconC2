@@ -12,10 +12,10 @@ import (
 
 type HTTPTransport struct {
 	server     *http.Server
-	httpConfig config.HTTPConfig
+	httpConfig config.AgentHTTPConfig
 }
 
-func NewHTTPTransport(httpConfig config.HTTPConfig, apiHandler *api.Handler) *HTTPTransport {
+func NewRestTransport(httpConfig config.AgentHTTPConfig, apiHandler *api.AgentHandler) *HTTPTransport {
 	return &HTTPTransport{
 		httpConfig: httpConfig,
 		server: &http.Server{
