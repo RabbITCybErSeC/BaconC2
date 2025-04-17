@@ -15,7 +15,7 @@ type HTTPTransport struct {
 	httpConfig config.AgentHTTPConfig
 }
 
-func NewRestTransport(httpConfig config.AgentHTTPConfig, apiHandler *api.AgentHandler) *HTTPTransport {
+func NewHTTPTransport(httpConfig config.AgentHTTPConfig, apiHandler *api.AgentHandler) *HTTPTransport {
 	return &HTTPTransport{
 		httpConfig: httpConfig,
 		server: &http.Server{

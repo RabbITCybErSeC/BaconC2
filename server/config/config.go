@@ -21,9 +21,9 @@ type ServerConfig struct {
 }
 
 type FrontEndHTTPConfig struct {
-	Port    int
-	Enabled bool
+	Port int
 }
+
 type AgentHTTPConfig struct {
 	Port    int
 	Enabled bool
@@ -46,8 +46,7 @@ func NewServerConfig() *ServerConfig {
 		DBPath:    "agents.db",
 		MaxAgents: 100,
 		FrontHTTPConfig: FrontEndHTTPConfig{
-			Port:    *httpPort,
-			Enabled: true, // Always enable HTTP for admin interface
+			Port: *httpPort,
 		},
 		UDPConfig: UDPConfig{
 			Port:    *udpPort,

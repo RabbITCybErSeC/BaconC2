@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AgentHandler handles agent-related operations (register, beacon, command results, etc.)
 type AgentHandler struct {
 	agentStore   store.AgentStoreInterface
 	commandQueue queue.CommandQueue

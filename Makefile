@@ -2,41 +2,47 @@ GO = go
 BINARY_NAME = bacon-server
 CLIENT_BINARY_NAME = bacon-client
 SERV_SRC_DIR = ./server
-CLIENT_SRC_DIR = ./client/
+CLIENT_SRC_DIR = ./client
 BIN_DIR = ./bin
 
+TARGET_OS ?= darwin
+TARGET_ARCH ?= arm64
+TARGET = $(TARGET_OS)-$(TARGET_ARCH)
+
 LDFLAGS = -s -w
-TAGS = go_sqlite,server
-BUILD_FLAGS = -trimpath -tags "$(TAGS)" -ldflags "$(LDFLAGS)"
+SERVER_TAGS = go_sqlite,server
+CLIENT_TAGS =
+SERVER_BUILD_FLAGS = -trimpath -tags "$(SERVER_TAGS)" -ldflags "$(LDFLAGS)"
+CLIENT_BUILD_FLAGS = -trimpath -tags "$(CLIENT_TAGS)" -ldflags "$(LDFLAGS)"
 
-.PHONY: all clean compile-servers compile-client run-server run-client
+SERVER_OUTPUT = $(BIN_DIR)/$(BINARY_NAME)_$(TARGET)
+CLIENT_OUTPUT = $(BIN_DIR)/$(CLIENT_BINARY_NAME)_$(TARGET)
 
-all: compile-servers compile-client
+.PHONY: all clean compile-server compile-client run-server run-client
+
+all: compile-server compile-client
 
 $(BIN_DIR):
-        @mkdir -p $(BIN_DIR)
+	@mkdir -p $(BIN_DIR)
 
-compile-servers: $(BIN_DIR)
-        @echo "Building server for darwin/arm64..."
-        @cd $(SERV_SRC_DIR) && GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 $(GO) build $(BUILD_FLAGS) -o ../$(BIN_DIR)/$(BINARY_NAME)_darwin-arm64
-        @echo "Build completed."
+compile-server: $(BIN_DIR)
+	@echo "Building server for $(TARGET)..."
+	@cd $(SERV_SRC_DIR) && GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) CGO_ENABLED=1 $(GO) build $(SERVER_BUILD_FLAGS) -o ../$(SERVER_OUTPUT) .
+	@echo "Server build completed: $(SERVER_OUTPUT)"
 
 compile-client: $(BIN_DIR)
-        @echo "Building server for darwin/arm64..."
-        @cd $(CLIENT_SRC_DIR) && GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 $(GO) build $(BUILD_FLAGS) -o ../$(BIN_DIR)/$(CLIENT_BINARY_NAME)_darwin-arm64
-        @echo "Build completed."
+	@echo "Building client for $(TARGET)..."
+	@cd $(CLIENT_SRC_DIR) && GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) CGO_ENABLED=0 $(GO) build $(CLIENT_BUILD_FLAGS) -o ../$(CLIENT_OUTPUT) .
+	@echo "Client build completed: $(CLIENT_OUTPUT)"
 
 run-server:
-        @echo "Running server..."
-        @cd $(SERV_SRC_DIR) && $(GO) run -tags "$(TAGS)" .
+	@echo "Running server..."
+	@cd $(SERV_SRC_DIR) && $(GO) run -tags "$(SERVER_TAGS)" .
 
 run-client:
-        @echo "Running client..."
-        @cd $(CLIENT_SRC_DIR) && $(GO) run .
+	@echo "Running client..."
+	@cd $(CLIENT_SRC_DIR) && $(GO) run .
 
 clean:
-        @echo "Cleaning up..."
-        @rm -rf $(BIN_DIR)
-        @echo "Clean completed."
-
-
+	@echo "Cleaning up..."
+	@rm -rf $(BIN_DIR)
