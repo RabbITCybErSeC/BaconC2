@@ -48,6 +48,7 @@ func NewServerConfig() *ServerConfig {
 		FrontHTTPConfig: FrontEndHTTPConfig{
 			Port: *httpPort,
 		},
+		AgentHTTPConfig: AgentHTTPConfig{Port: 8081, Enabled: true},
 		UDPConfig: UDPConfig{
 			Port:    *udpPort,
 			Enabled: *enableUDP,
@@ -85,7 +86,9 @@ func runMigrations(db *gorm.DB) error {
 	if err := db.AutoMigrate(&models.Agent{}); err != nil {
 		return err
 	}
-
+	if err := db.AutoMigrate(&models.User{}); err != nil {
+		return err
+	}
 	return nil
 }
 
