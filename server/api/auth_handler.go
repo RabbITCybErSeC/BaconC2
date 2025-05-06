@@ -9,6 +9,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/server/models"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,12 +31,13 @@ type RegisterRequest struct {
 }
 
 type LoginRequest struct {
-	UserName string `json:"username"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 type Claims struct {
-	UserID uint `json:"user_id"`
+	UserID string `json:"user_id"`
+	JTI    string `json:"jti"`
 	jwt.RegisteredClaims
 }
 
@@ -83,11 +85,21 @@ func (h *AuthHandler) handleLogin(c *gin.Context) {
 		return
 	}
 
+	// Generate unique JWT token
 	expirationTime := time.Now().Add(24 * time.Hour)
+	uniqueJTI, err := uuid.NewRandom()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate unique token ID"})
+		return
+	}
+
 	claims := &Claims{
 		UserID: user.ID,
+		JTI:    uniqueJTI.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "baconc2",
 		},
 	}
 

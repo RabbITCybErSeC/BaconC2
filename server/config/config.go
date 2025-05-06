@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"log"
+	"os"
 
 	"github.com/RabbITCybErSeC/BaconC2/server/models"
 	"gorm.io/driver/sqlite"
@@ -15,6 +16,7 @@ type ServerConfig struct {
 	Env             string
 	DBPath          string
 	MaxAgents       int
+	JWTSecret       string
 	AgentHTTPConfig AgentHTTPConfig
 	FrontHTTPConfig FrontEndHTTPConfig
 	UDPConfig       UDPConfig
@@ -40,11 +42,18 @@ func NewServerConfig() *ServerConfig {
 	enableUDP := flag.Bool("enable-udp", false, "Enable UDP transport")
 	flag.Parse()
 
+	// Load JWT_SECRET from environment variable
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
+
 	config := &ServerConfig{
-		Port:      ":8080", // Default port for HTTP server
+		Port:      ":8080",
 		Env:       "development",
 		DBPath:    "agents.db",
 		MaxAgents: 100,
+		JWTSecret: jwtSecret,
 		FrontHTTPConfig: FrontEndHTTPConfig{
 			Port: *httpPort,
 		},
@@ -82,7 +91,6 @@ func runMigrations(db *gorm.DB) error {
 	if err := db.AutoMigrate(&models.Command{}); err != nil {
 		return err
 	}
-
 	if err := db.AutoMigrate(&models.Agent{}); err != nil {
 		return err
 	}

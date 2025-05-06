@@ -1,6 +1,11 @@
 package api
 
-// RegisterAgentRoutes sets up routes for AgentHandler
+import (
+	"github.com/RabbITCybErSeC/BaconC2/server/config"
+	"github.com/RabbITCybErSeC/BaconC2/server/db"
+	"github.com/gin-gonic/gin"
+)
+
 func RegisterAgentRoutes(agentHandler *AgentHandler) {
 	agentAPI := agentHandler.engine.Group("/api/agents")
 	{
@@ -12,11 +17,21 @@ func RegisterAgentRoutes(agentHandler *AgentHandler) {
 	}
 }
 
-// RegisterFrontendRoutes sets up routes for FrontendHandler
-func RegisterFrontendRoutes(frontendHandler *FrontendHandler) {
+func RegisterFrontendRoutes(frontendHandler *FrontendHandler, config *config.ServerConfig) {
 	frontendAPI := frontendHandler.engine.Group("/api/frontend")
 	{
 		frontendAPI.Use(CorsMiddleware())
+		frontendAPI.Use(JWTMiddleware(config)) // Protect with JWT
 		frontendAPI.GET("/agents", frontendHandler.handleListAgents)
+	}
+}
+
+func RegisterAuthRoutes(engine *gin.Engine, config *config.ServerConfig, userRepo db.UserRepositoryInterface) {
+	authHandler := NewAuthHandler(config, userRepo)
+	authAPI := engine.Group("/api/auth")
+	{
+		authAPI.Use(CorsMiddleware())
+		authAPI.POST("/register", authHandler.handleRegister)
+		authAPI.POST("/login", authHandler.handleLogin)
 	}
 }

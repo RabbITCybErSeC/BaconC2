@@ -37,6 +37,8 @@ compile-client: $(BIN_DIR)
 
 run-server:
 	@echo "Running server..."
+	export JWT_SECRET="8jXb9kPqW2mZ7vY3rT5nL1cF6hD4gJ8eK2aM9wN0"
+	@echo "[INFO] Use token only for development"
 	@cd $(SERV_SRC_DIR) && $(GO) run -tags "$(SERVER_TAGS)" .
 
 run-client:

@@ -25,6 +25,7 @@ func main() {
 
 	agentRepo := db.NewAgentRepository(cfg.DB)
 	agentStore := store.NewAgentStore(agentRepo)
+	userRepo := db.NewUserRepository(cfg.DB)
 	commandQueue := queue.NewMemoryCommandQueue()
 
 	gin.SetMode(gin.ReleaseMode)
@@ -38,10 +39,10 @@ func main() {
 		server.AddTransport(httpTransport)
 	}
 
-	// Frontend handling server (runs on FrontHTTPConfig port, e.g., 8081)
 	frontendEngine := gin.Default()
 	frontendHandler := api.NewFrontendHandler(agentStore, frontendEngine)
-	api.RegisterFrontendRoutes(frontendHandler)
+	api.RegisterFrontendRoutes(frontendHandler, cfg)
+	api.RegisterAuthRoutes(frontendEngine, cfg, userRepo)
 
 	frontendServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.FrontHTTPConfig.Port),
