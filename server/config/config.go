@@ -130,7 +130,7 @@ func seedStaticUser(gormDB *gorm.DB) error {
 	}
 
 	staticUser := &models.User{
-		UserName: staticUserName,
+		Username: staticUserName,
 		Password: string(hashedPassword),
 	}
 

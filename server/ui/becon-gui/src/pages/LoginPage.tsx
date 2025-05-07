@@ -4,7 +4,7 @@ import LoginForm from '../components/auth/LoginForm';
 import LoginFooter from '../components/auth/LoginFooter';
 
 const homeLink = "/";
-const soarcaLogoUrlPath = "/assets/logos/soarca-logo.svg";
+const soarcaLogoUrlPath = "/assets/logos/baconc2.png";
 
 const LoginPage: React.FC = () => {
   const [errors, setErrors] = useState<Error[]>([]);

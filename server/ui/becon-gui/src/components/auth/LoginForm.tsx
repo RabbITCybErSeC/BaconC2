@@ -1,5 +1,8 @@
+// src/components/auth/LoginForm.tsx
 import React, { useState, FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginFormProps {
   onSubmitSuccess: () => void;
@@ -7,47 +10,39 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSubmitSuccess, onSubmitError }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!username || !password) {
+      onSubmitError([new Error('Username and password are required')]);
+      return;
+    }
+
     setIsLoading(true);
     onSubmitError([]);
 
     try {
-      const response = await fetch('/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      setIsLoading(false);
-
-      if (!response.ok) {
-        let errorsToShow = [new Error('Login failed. Please check your credentials.')];
-        try {
-          const errorData = await response.json();
-          if (Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-            errorsToShow = errorData.errors.map((msg: string) => new Error(msg));
-          } else if (errorData.message) {
-            errorsToShow = [new Error(errorData.message)];
-          }
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
-        }
-        onSubmitError(errorsToShow);
-
-      } else {
-        onSubmitSuccess();
-      }
+      await login({ username, password });
+      onSubmitSuccess();
+      navigate('/dashboard'); // Redirect to dashboard after successful login
     } catch (error) {
-      setIsLoading(false);
-      onSubmitError([new Error('A network error occurred. Please try again.')]);
       console.error('Login error:', error);
+
+      let errorsToShow = [new Error('Login failed. Please check your credentials.')];
+
+      if (error instanceof Error) {
+        errorsToShow = [error];
+      }
+
+      onSubmitError(errorsToShow);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,14 +51,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmitSuccess, onSubmitError })
       onSubmit={handleSubmit}
       className="px-5 py-7"
     >
-      <label htmlFor="email" className="font-semibold text-sm text-gray-600 dark:text-gray-200 pb-1 block">E-mail</label>
+      <label htmlFor="username" className="font-semibold text-sm text-gray-600 dark:text-gray-200 pb-1 block">Username</label>
       <input
-        id="email"
-        name="email"
-        type="email"
+        id="username"
+        name="username"
+        type="text"
         required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
         disabled={isLoading}
         className="border rounded-lg px-3 py-2 mt-1 mb-5 text-sm w-full dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />

@@ -55,7 +55,7 @@ func (h *AuthHandler) handleRegister(c *gin.Context) {
 	}
 
 	user := &models.User{
-		UserName: req.UserName,
+		Username: req.UserName,
 		Password: string(hashedPassword),
 	}
 
