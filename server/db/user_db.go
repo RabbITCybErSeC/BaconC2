@@ -7,7 +7,7 @@ import (
 
 type UserRepositoryInterface interface {
 	Save(user *models.User) error
-	FindByEmail(email string) (*models.User, error)
+	FindByUsername(username string) (*models.User, error)
 }
 
 type UserRepository struct {
@@ -22,9 +22,9 @@ func (r *UserRepository) Save(user *models.User) error {
 	return r.db.Save(user).Error
 }
 
-func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
+func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
 	var user models.User
-	err := r.db.First(&user, "email = ?", email).Error
+	err := r.db.First(&user, "username = ?", username).Error
 	if err != nil {
 		return nil, err
 	}

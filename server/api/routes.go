@@ -21,7 +21,7 @@ func RegisterFrontendRoutes(frontendHandler *FrontendHandler, config *config.Ser
 	frontendAPI := frontendHandler.engine.Group("/api/frontend")
 	{
 		frontendAPI.Use(CorsMiddleware())
-		frontendAPI.Use(JWTMiddleware(config)) // Protect with JWT
+		frontendAPI.Use(JWTMiddleware(config))
 		frontendAPI.GET("/agents", frontendHandler.handleListAgents)
 	}
 }
@@ -31,7 +31,6 @@ func RegisterAuthRoutes(engine *gin.Engine, config *config.ServerConfig, userRep
 	authAPI := engine.Group("/api/auth")
 	{
 		authAPI.Use(CorsMiddleware())
-		authAPI.POST("/register", authHandler.handleRegister)
 		authAPI.POST("/login", authHandler.handleLogin)
 	}
 }

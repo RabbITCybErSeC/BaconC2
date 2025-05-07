@@ -31,7 +31,7 @@ type RegisterRequest struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"`
+	UserName string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -74,7 +74,7 @@ func (h *AuthHandler) handleLogin(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userRepo.FindByEmail(req.Email)
+	user, err := h.userRepo.FindByUsername(req.UserName)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return

@@ -1,11 +1,15 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"flag"
 	"log"
 	"os"
 
+	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	"github.com/RabbITCybErSeC/BaconC2/server/models"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -97,7 +101,53 @@ func runMigrations(db *gorm.DB) error {
 	if err := db.AutoMigrate(&models.User{}); err != nil {
 		return err
 	}
+
+	if err := seedStaticUser(db); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func seedStaticUser(gormDB *gorm.DB) error {
+	userRepo := db.NewUserRepository(gormDB)
+
+	staticUserName := "admin"
+	if _, err := userRepo.FindByUsername(staticUserName); err == nil {
+		log.Println("Static user already exists, skipping creation")
+		return nil
+	}
+
+	staticPassword, err := generateRandomPassword(16)
+	if err != nil {
+		return err
+	}
+
+	// Hash the random password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(staticPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	staticUser := &models.User{
+		UserName: staticUserName,
+		Password: string(hashedPassword),
+	}
+
+	if err := userRepo.Save(staticUser); err != nil {
+		return err
+	}
+
+	log.Printf("Created static user: username=%s, password=%s (change this in production!)", staticUserName, staticPassword)
+	return nil
+}
+
+func generateRandomPassword(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
 func (c *ServerConfig) Close() error {
