@@ -4,7 +4,7 @@ import { ArrowLeft, HelpCircle, KeyRound } from 'lucide-react';
 const LoginFooter: React.FC = () => {
   const handleBackToSite = () => {
     // Use your preferred navigation method, window.location is simple
-    window.location.href = 'https://soarca.com';
+    window.location.href = '';
   }
 
   return (
