@@ -23,7 +23,7 @@ function App() {
           <Route path="*" element={<Navigate to="/playbooks" replace />} />
         </Route>
       </Route>
-    </Routes>
+    </Routes >
   );
 }
 

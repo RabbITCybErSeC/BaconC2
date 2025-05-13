@@ -12,6 +12,7 @@ import {
   GitBranch,
   FileText
 } from "lucide-react";
+import { SVGProps } from "react";
 
 export interface NavItem {
   icon: ReactElement;
@@ -22,7 +23,8 @@ export interface NavItem {
 
 const iconClasses = "shrink-0 size-5";
 
-const cloneIcon = (icon: ReactElement) => React.cloneElement(icon, { className: iconClasses });
+const cloneIcon = (icon: ReactElement<SVGProps<SVGSVGElement>>) =>
+  React.cloneElement(icon, { className: iconClasses });
 
 export const navItems: NavItem[] = [
   {

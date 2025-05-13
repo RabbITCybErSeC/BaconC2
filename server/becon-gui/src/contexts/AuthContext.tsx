@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getToken, isAuthenticated, login as authLogin, logout as authLogout, setupAxiosInterceptors, LoginRequest } from '../services/authService';
+; import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getToken, login as authLogin, logout as authLogout, setupAxiosInterceptors, LoginRequest } from '../services/authService';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -16,16 +16,23 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(getToken());
+  const bypassAuth = process.env.REACT_APP_BYPASS_AUTH === 'true'; // For testing
+  const [token, setToken] = useState<string | null>(bypassAuth ? 'test-token' : getToken());
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Set up axios interceptors when the component mounts
   useEffect(() => {
-    setupAxiosInterceptors();
+    if (!bypassAuth) {
+      setupAxiosInterceptors();
+    }
     setLoading(false);
-  }, []);
+  }, [bypassAuth]);
 
   const login = async (credentials: LoginRequest): Promise<void> => {
+    if (bypassAuth) {
+      setToken('test-token');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const newToken = await authLogin(credentials);
@@ -36,16 +43,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = (): void => {
-    authLogout();
-    setToken(null);
+    if (!bypassAuth) {
+      authLogout();
+      setToken(null);
+    }
   };
 
   const value = {
-    isAuthenticated: !!token,
+    isAuthenticated: bypassAuth || !!token, // Derive from token
     token,
     login,
     logout,
-    loading
+    loading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
