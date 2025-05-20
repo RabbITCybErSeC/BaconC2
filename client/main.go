@@ -19,7 +19,7 @@ import (
 func main() {
 	cfg := config.AgentConfig{
 		AgentID:        generateAgentID(),
-		ServerURL:      "http://localhost:8080",
+		ServerURL:      "http://localhost:8081",
 		BeaconInterval: 10 * time.Second, // Beacon every 10 seconds
 		Protocol:       "http",
 	}

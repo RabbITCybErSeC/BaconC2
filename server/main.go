@@ -33,9 +33,11 @@ func main() {
 	server := service.NewServer(agentStore, commandQueue, cfg)
 
 	if cfg.AgentHTTPConfig.Enabled {
+		fmt.Println("enabled")
 		agentAPIEngine := gin.Default()
 		agentAPIHandler := api.NewAgentHandler(agentStore, commandQueue, agentAPIEngine)
 		httpTransport := transport.NewHTTPTransport(cfg.AgentHTTPConfig, agentAPIHandler)
+		api.RegisterAgentRoutes(agentAPIHandler)
 		server.AddTransport(httpTransport)
 	}
 

