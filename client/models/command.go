@@ -9,4 +9,5 @@ type Command struct {
 
 type ICommandExecutor interface {
 	Execute(cmd Command) Command
+	ProcessCommandQueue()
 }
