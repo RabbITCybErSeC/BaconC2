@@ -13,6 +13,8 @@ import (
 
 const (
 	registerAPIPath = "%s/api/agents/register"
+	beaconAPIPath   = "%s/api/agents/beacon?id=%s"
+	resultAPIPath   = "%s/api/agents/result?id=%s"
 )
 
 type HTTPTransport struct {
@@ -56,7 +58,7 @@ func (t *HTTPTransport) Register(agent models.Agent) error {
 func (t *HTTPTransport) Beacon() (models.Command, error) {
 	var emptyCmd models.Command
 
-	url := fmt.Sprintf("%s/api/beacon?id=%s", t.serverURL, t.agentID)
+	url := fmt.Sprintf(beaconAPIPath, t.serverURL, t.agentID)
 	resp, err := t.httpClient.Post(url, "application/json", nil)
 	if err != nil {
 		return emptyCmd, fmt.Errorf("HTTP beacon error: %w", err)
@@ -90,7 +92,7 @@ func (t *HTTPTransport) SendResult(agentID string, result models.Command) error 
 		return fmt.Errorf("failed to marshal result: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/result?id=%s", t.serverURL, agentID)
+	url := fmt.Sprintf(resultAPIPath, t.serverURL, agentID)
 	resp, err := t.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("HTTP result send error: %w", err)

@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AgentHandler handles agent-related operations (register, beacon, command results, etc.)
+// AgentHandler handles agent-related operations
 type AgentHandler struct {
 	agentStore   store.AgentStoreInterface
 	commandQueue queue.CommandQueue
@@ -75,13 +75,19 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 	cmd, hasCommand := h.commandQueue.Get(agentID)
 	if hasCommand {
 		if err := h.agentStore.UpdateAgentCommands(agentID, cmd); err != nil {
-			fmt.Printf("Error updating agent commands: %v", err)
+			fmt.Printf("Error updating agent commands: %v\n", err)
 		}
-		c.JSON(http.StatusOK, cmd)
+		c.JSON(http.StatusOK, gin.H{
+			"command":    cmd,
+			"nextBeacon": 10, // Recommend beaconing again in 10 seconds
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "acknowledged"})
+	c.JSON(http.StatusOK, gin.H{
+		"status":     "acknowledged",
+		"nextBeacon": 10, // Default beacon interval
+	})
 }
 
 // handleCommandResult handles command results from agents
