@@ -1,5 +1,5 @@
 import React from 'react';
-import { Agent } from '../../models/Agent.tsx';
+import { type Agent } from '../../models/Agent.tsx';
 
 interface AgentTableRowProps {
   agent: Agent;

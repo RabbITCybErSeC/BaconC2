@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Agent } from '../../models/Agent.tsx';
+import { type Agent } from '../../models/Agent.tsx';
 
 interface EditAgentModalProps {
   isOpen: boolean;

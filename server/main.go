@@ -45,7 +45,7 @@ func main() {
 	frontendHandler := api.NewFrontendHandler(agentStore, frontendEngine)
 	api.RegisterFrontendRoutes(frontendHandler, cfg)
 	api.RegisterAuthRoutes(frontendEngine, cfg, userRepo)
-
+	api.StaticHandler(frontendEngine)
 	frontendServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.FrontHTTPConfig.Port),
 		Handler: frontendEngine,

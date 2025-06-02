@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Agent } from '../models/Agent.tsx';
+import type { Agent } from '../models/Agent.tsx';
 import AgentTableRow from './tables/AgentTableRow.tsx';
 import EditAgentModal from './modals/EditAgentModal.tsx';
-import InventoryControls from './InventorControls.tsx';
+import InventoryControls from './InventoryControls.tsx';
 
 const MOCK_AGENTS: Agent[] = [
   { id: 'agent-001', name: 'Recon Agent', description: 'Gathers system information.', status: 'Active', lastModified: '2025-03-15T10:00:00Z', createdBy: 'admin' },
