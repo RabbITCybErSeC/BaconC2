@@ -1,5 +1,7 @@
-; import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getToken, login as authLogin, logout as authLogout, setupAxiosInterceptors, LoginRequest } from '../services/authService';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { getToken, login as authLogin, logout as authLogout, setupAxiosInterceptors } from '../services/authService';
+import type { LoginRequest } from '../services/authService';
 
 interface AuthContextType {
   isAuthenticated: boolean;

@@ -1,4 +1,7 @@
-import React, { ReactElement } from "react";
+import React from "react";
+import type { ReactElement } from "react";
+import type { SVGProps } from "react";
+
 import {
   Home,
   Server,
@@ -12,7 +15,6 @@ import {
   GitBranch,
   FileText
 } from "lucide-react";
-import { SVGProps } from "react";
 
 export interface NavItem {
   icon: ReactElement;
