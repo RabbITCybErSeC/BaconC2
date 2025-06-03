@@ -11,18 +11,18 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
 
       {/* Protected routes under DashboardLayout */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<DashboardLayout />}>
-          {/* Redirect base path "/" to "/playbooks" */}
-          <Route index element={<Navigate to="/playbooks" replace />} />
+      {/* <Route element={<ProtectedRoute />}> */}
+      <Route path="/" element={<DashboardLayout />}>
+        {/* Redirect base path "/" to "/playbooks" */}
+        <Route index element={<Navigate to="/playbooks" replace />} />
 
-          {/* Playbook Inventory Route */}
-          <Route path="playbooks" element={<AgentInventoryPage />} />
+        {/* Playbook Inventory Route */}
+        <Route path="playbooks" element={<AgentInventoryPage />} />
 
-          {/* Catch-all for unknown routes within the layout, redirects to playbooks */}
-          <Route path="*" element={<Navigate to="/playbooks" replace />} />
-        </Route>
+        {/* Catch-all for unknown routes within the layout, redirects to playbooks */}
+        <Route path="*" element={<Navigate to="/playbooks" replace />} />
       </Route>
+      {/* </Route> */}
     </Routes >
   );
 }

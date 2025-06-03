@@ -1,5 +1,5 @@
 import React from 'react';
-import { type Agent } from '../../models/Agent.tsx';
+import { type Agent } from '../../models/Agent';
 
 interface AgentTableRowProps {
   agent: Agent;
@@ -9,18 +9,12 @@ interface AgentTableRowProps {
 }
 
 const AgentTableRow: React.FC<AgentTableRowProps> = ({ agent, isSelected, onSelect, onEdit }) => {
-
-  const getStatusBadge = (status: Agent['status']) => {
-    switch (status) {
-      case 'Active':
-        return <div className="h-2.5 w-2.5 rounded-full bg-green-500 me-2"></div>;
-      case 'Inactive':
-        return <div className="h-2.5 w-2.5 rounded-full bg-red-500 me-2"></div>;
-      case 'Draft':
-        return <div className="h-2.5 w-2.5 rounded-full bg-yellow-400 me-2"></div>;
-      default:
-        return <div className="h-2.5 w-2.5 rounded-full bg-gray-400 me-2"></div>;
-    }
+  const getStatusBadge = (isActive: boolean) => {
+    return isActive ? (
+      <div className="h-2.5 w-2.5 rounded-full bg-green-500 me-2"></div>
+    ) : (
+      <div className="h-2.5 w-2.5 rounded-full bg-red-500 me-2"></div>
+    );
   };
 
   return (
@@ -38,20 +32,18 @@ const AgentTableRow: React.FC<AgentTableRowProps> = ({ agent, isSelected, onSele
         </div>
       </td>
       <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-        {agent.name}
+        {agent.hostname}
         <div className="font-normal text-gray-500 text-xs mt-1">ID: {agent.id}</div>
-        <div className="font-normal text-gray-500 text-xs mt-1">Created By: {agent.createdBy}</div>
       </th>
+      <td className="px-6 py-4">{agent.ip}</td>
+      <td className="px-6 py-4">{agent.os}</td>
+      <td className="px-6 py-4">{agent.protocol}</td>
       <td className="px-6 py-4">
-        {agent.description}
-      </td>
-      <td className="px-6 py-4">
-        {/* Display Last Modified Date - format as needed */}
-        {new Date(agent.lastModified).toLocaleDateString()}
+        {new Date(agent.lastSeen).toLocaleDateString()}
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center">
-          {getStatusBadge(agent.status)} {agent.status}
+          {getStatusBadge(agent.isActive)} {agent.isActive ? 'Active' : 'Inactive'}
         </div>
       </td>
       <td className="px-6 py-4">

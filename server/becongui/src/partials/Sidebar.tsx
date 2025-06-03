@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import SidebarLinkGroup from "./SidebarLinkGroup";
-import { navItems } from "./NavItems.tsx";
+import { navItems } from "./NavItems";
 
 const BeconLogoPath = "/assets/logos/beconc2.png";
 
@@ -19,13 +19,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   const trigger = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLDivElement>(null);
 
-  const storedSidebarExpanded = typeof window !== 'undefined' ? localStorage.getItem("sidebar-expanded") : null;
+  const storedSidebarExpanded = typeof window !== "undefined" ? localStorage.getItem("sidebar-expanded") : null;
   const [sidebarExpanded, setSidebarExpanded] = useState(
     storedSidebarExpanded === null ? false : storedSidebarExpanded === "true"
   );
 
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
 
+  // Close sidebar on outside click (mobile)
   useEffect(() => {
     const clickHandler = ({ target }: MouseEvent) => {
       if (!sidebar.current || !trigger.current) return;
@@ -41,17 +42,19 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => document.removeEventListener("click", clickHandler);
   }, [sidebarOpen, setSidebarOpen]);
 
+  // Close sidebar on Escape key
   useEffect(() => {
     const keyHandler = ({ key }: KeyboardEvent) => {
-      if (!sidebarOpen || key !== 'Escape') return;
+      if (!sidebarOpen || key !== "Escape") return;
       setSidebarOpen(false);
     };
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
   }, [sidebarOpen, setSidebarOpen]);
 
+  // Update localStorage and body class for sidebar expansion
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.setItem("sidebar-expanded", sidebarExpanded.toString());
       if (sidebarExpanded) {
         document.querySelector("body")?.classList.add("sidebar-expanded");
@@ -63,26 +66,26 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="min-w-fit">
+      {/* Overlay for mobile */}
       <div
         className={`fixed inset-0 bg-gray-900/30 z-40 lg:hidden lg:z-auto transition-opacity duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         aria-hidden="true"
       />
 
+      {/* Sidebar */}
       <div
         id="sidebar"
         ref={sidebar}
         className={`group flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-dvh overflow-y-scroll lg:overflow-y-auto no-scrollbar w-64 lg:w-20 lg:hover:w-64 lg:[&.sidebar-expanded]:w-64 2xl:w-64 shrink-0 bg-white dark:bg-gray-800 p-4 transition-all duration-200 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-64"
-          } ${variant === "v2"
-            ? "border-r border-gray-200 dark:border-gray-700/60"
-            : ""
-          }`}
+          } ${variant === "v2" ? "border-r border-gray-200 dark:border-gray-700/60" : ""}`}
       >
+        {/* Header with Close Button and Logo */}
         <div className="flex justify-between mb-10 pr-3 sm:px-2">
           <button
             ref={trigger}
             className="lg:hidden text-gray-500 hover:text-gray-400"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => setSidebarOpen(false)}
             aria-controls="sidebar"
             aria-expanded={sidebarOpen}
           >
@@ -90,14 +93,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             <X className="w-6 h-6" />
           </button>
           <a href="/" className="block">
-            {/* Replaced div with img tag for the logo */}
             <img src={BeconLogoPath} alt="Becon Logo" className="w-16 h-16" />
           </a>
         </div>
 
+        {/* Navigation Items */}
         <div className="space-y-8">
           <div>
-            <h3 className="text-xs uppercase text-gray-399 dark:text-gray-500 font-semibold pl-3 mb-3">
+            <h3 className="text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3 mb-3">
               <span
                 className="hidden lg:block lg:opacity-0 lg:group-hover:opacity-0 lg:[&.sidebar-expanded]:opacity-0 2xl:opacity-0 text-center w-6"
                 aria-hidden="true"
@@ -110,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </h3>
             <ul className="mt-3">
               {navItems.map((item) => {
-                const isActive = currentPath === item.href || currentPath.startsWith(item.href + '/');
+                const isActive = currentPath === item.href || currentPath.startsWith(item.href + "/");
                 const isGroupActive = item.children ? currentPath.startsWith(item.href) : false;
 
                 return (
@@ -147,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </a>
                             <div className="lg:hidden lg:group-hover:block lg:[&.sidebar-expanded]:block 2xl:block">
                               <ul className={`pl-8 pr-2 mt-1 ${!open && "hidden"}`}>
-                                {item.children?.map(child => {
+                                {item.children?.map((child) => {
                                   const isChildActive = currentPath === child.href;
                                   return (
                                     <li key={child.label} className="mb-1 last:mb-0">
@@ -171,7 +174,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                         )}
                       </SidebarLinkGroup>
                     ) : (
-                      <li className={`px-1 py-1 rounded-lg mb-0.5 last:mb-0 ${isActive ? 'bg-gray-100 dark:bg-gray-700/50' : ''}`}>
+                      <li
+                        className={`px-1 py-1 rounded-lg mb-0.5 last:mb-0 ${isActive ? "bg-gray-100 dark:bg-gray-700/50" : ""
+                          }`}
+                      >
                         <a
                           href={item.href}
                           className={`block text-gray-800 dark:text-gray-100 truncate transition duration-150 rounded px-2 py-1 ${isActive
@@ -195,6 +201,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
+        {/* Expand/Collapse Button (Desktop) */}
         <div className="pt-3 hidden lg:inline-flex justify-end mt-auto">
           <div className="w-12 pl-4 pr-3 py-2">
             <button
