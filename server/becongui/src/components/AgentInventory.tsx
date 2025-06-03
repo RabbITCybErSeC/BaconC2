@@ -1,8 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { X } from 'lucide-react';
 import type { Agent } from '../models/Agent';
 import AgentTableRow from './tables/AgentTableRow';
 import EditAgentModal from './modals/EditAgentModal';
 import InventoryControls from './InventoryControls';
+import ErrorBanner from '../partials/ErrorBanner';
+import { getToken } from '../services/authService';
 
 // Mock data for operations not yet implemented
 const MOCK_AGENTS: Agent[] = [
@@ -27,7 +30,7 @@ const AgentInventory: React.FC = () => {
       try {
         const response = await fetch('/api/frontend/agents', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`, // Assuming JWT is stored in localStorage
+            'Authorization': getToken() || '',
             'Content-Type': 'application/json',
           },
         });
@@ -124,9 +127,10 @@ const AgentInventory: React.FC = () => {
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
       {error && (
-        <div className="mb-4 p-4 text-red-800 bg-red-100 border border-red-400 rounded">
-          {error}
-        </div>
+        <ErrorBanner
+          message={error}
+          onDismiss={() => setError(null)}
+        />
       )}
       <InventoryControls
         searchTerm={searchTerm}
