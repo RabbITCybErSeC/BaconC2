@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Agent } from '../models/Agent';
 import AgentTableRow from './tables/AgentTableRow';
-import EditAgentModal from './modals/EditAgentModal';
+import EditAgentSideBar from './modals/EditAgentSideBar';
 import InventoryControls from './InventoryControls';
 import ErrorBanner from '../partials/ErrorBanner';
 import { getToken } from '../services/authService';
@@ -185,7 +185,7 @@ const AgentInventory: React.FC = () => {
         </tbody>
       </table>
 
-      <EditAgentModal
+      <EditAgentSideBar
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         agent={editingAgent}
