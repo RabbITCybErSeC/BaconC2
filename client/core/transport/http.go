@@ -22,11 +22,11 @@ type HTTPTransport struct {
 	serverURL      string
 	agentID        string
 	httpClient     *http.Client
-	commandQueue   queue.CommandQueue
+	commandQueue   queue.ICommandQueue
 	beaconInterval time.Duration
 }
 
-func NewHTTPTransport(serverURL, agentID string, commandQueue queue.CommandQueue) models.ITransportProtocol {
+func NewHTTPTransport(serverURL, agentID string, commandQueue queue.ICommandQueue) models.ITransportProtocol {
 	return &HTTPTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,
@@ -61,27 +61,33 @@ func (t *HTTPTransport) Register(agent models.Agent) error {
 }
 
 func (t *HTTPTransport) Beacon() (models.Command, error) {
+	cmd, _, err := t.BeaconWithResultRequest()
+	return cmd, err
+}
+
+func (t *HTTPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
 	var emptyCmd models.Command
 
 	url := fmt.Sprintf(beaconAPIPath, t.serverURL, t.agentID)
 	resp, err := t.httpClient.Post(url, "application/json", nil)
 	if err != nil {
-		return emptyCmd, fmt.Errorf("HTTP beacon error: %w", err)
+		return emptyCmd, false, fmt.Errorf("HTTP beacon error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return emptyCmd, fmt.Errorf("beacon failed with status %d: %s", resp.StatusCode, string(body))
+		return emptyCmd, false, fmt.Errorf("beacon failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var response struct {
-		Command    models.Command `json:"command"`
-		Status     string         `json:"status,omitempty"`
-		NextBeacon int            `json:"nextBeacon,omitempty"`
+		Command        models.Command `json:"command"`
+		Status         string         `json:"status,omitempty"`
+		NextBeacon     int            `json:"nextBeacon,omitempty"`
+		RequestResults bool           `json:"requestResults"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return emptyCmd, fmt.Errorf("failed to decode beacon response: %w", err)
+		return emptyCmd, false, fmt.Errorf("failed to decode beacon response: %w", err)
 	}
 
 	// Update beacon interval if provided
@@ -91,18 +97,18 @@ func (t *HTTPTransport) Beacon() (models.Command, error) {
 
 	// If only "status" is returned (e.g., "acknowledged"), return an empty command
 	if response.Command.ID == "" && response.Status == "acknowledged" {
-		return emptyCmd, nil
+		return emptyCmd, response.RequestResults, nil
 	}
 
 	// Add command to queue
 	if err := t.commandQueue.Add(response.Command); err != nil {
-		return emptyCmd, fmt.Errorf("failed to queue command: %w", err)
+		return emptyCmd, response.RequestResults, fmt.Errorf("failed to queue command: %w", err)
 	}
 
-	return response.Command, nil
+	return response.Command, response.RequestResults, nil
 }
 
-func (t *HTTPTransport) SendResult(agentID string, result models.Command) error {
+func (t *HTTPTransport) SendResult(agentID string, result models.CommandResult) error {
 	jsonData, err := json.Marshal(result)
 	if err != nil {
 		return fmt.Errorf("failed to marshal result: %w", err)

