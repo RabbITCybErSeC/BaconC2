@@ -61,15 +61,15 @@ const Header: React.FC<HeaderProps> = ({
           >
             <Search size={20} />
           </button>
-
-          <button
-            onClick={handleThemeToggle}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:text-violet-600 dark:focus:text-violet-400"
-            aria-label="Toggle theme"
-          >
-            <Sun className="hidden dark:block" size={20} />
-            <Moon className="dark:hidden" size={20} />
-          </button>
+          {/**/}
+          {/* <button */}
+          {/*   onClick={handleThemeToggle} */}
+          {/*   className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:text-violet-600 dark:focus:text-violet-400" */}
+          {/*   aria-label="Toggle theme" */}
+          {/* > */}
+          {/*   <Sun className="hidden dark:block" size={20} /> */}
+          {/*   <Moon className="dark:hidden" size={20} /> */}
+          {/* </button> */}
 
           <div className="relative">
             <button
