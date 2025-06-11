@@ -8,3 +8,8 @@ type ITransportProtocol interface {
 	SendResult(agentID string, result CommandResult) error
 	Close() error
 }
+
+type IStreamingTransport interface {
+	StartStreamingSession(sessionType string, config map[string]interface{}, resultChan chan<- CommandResult) error
+	CloseSession(sessionID string) error
+}
