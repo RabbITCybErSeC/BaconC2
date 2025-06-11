@@ -15,9 +15,13 @@ const (
 	shellSessionTimeout = 30 * time.Second
 )
 
-func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport models.ITransportProtocol) {
+func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport models.ITransportProtocol, streamingTransport models.IStreamingTransport) {
 	registry.RegisterHandler("sys_info", func(cmd models.Command) models.CommandResult {
 		return getInfoHandler(cmd, resultsQueue)
+	})
+
+	registry.RegisterHandler("start_shell", func(cmd models.Command) models.CommandResult {
+		return startShellHandler(cmd, resultsQueue, streamingTransport)
 	})
 }
 
@@ -63,7 +67,7 @@ func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.
 	return result
 }
 
-func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, transport models.ITransportProtocol) models.CommandResult {
+func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, streamingTransport models.IStreamingTransport) models.CommandResult {
 	// Create default configuration
 	config, err := models.NewStreamingConfig(models.ShellTypeBash, "xterm")
 	if err != nil {
@@ -74,7 +78,6 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, tran
 			Output: map[string]string{"error": fmt.Sprintf("Failed to create config: %v", err)},
 		}
 	}
-	wsTransport := wsProvider.NewWebSocketTransport(wsProvider.GetServerURL(), wsProvider.GetAgentID())
 
 	resultChan := make(chan models.CommandResult, 1)
 	var wg sync.WaitGroup
@@ -82,7 +85,7 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, tran
 
 	go func() {
 		defer wg.Done()
-		if err := wsTransport.StartStreamingSession("shell", config, resultChan); err != nil {
+		if err := streamingTransport.StartStreamingSession("shell", config, resultChan); err != nil {
 			resultChan <- models.CommandResult{
 				ID:     cmd.ID,
 				Status: "error",
@@ -108,7 +111,7 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, tran
 		return result
 	case <-time.After(shellSessionTimeout):
 		log.Printf("Shell session timed out for command ID: %s", cmd.ID)
-		wsTransport.CloseSession("shell")
+		streamingTransport.CloseSession("shell")
 		wg.Wait() // Ensure goroutine completes before returning
 		return models.CommandResult{
 			ID:     cmd.ID,

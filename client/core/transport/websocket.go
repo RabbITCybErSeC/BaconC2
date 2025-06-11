@@ -20,8 +20,6 @@ import (
 )
 
 type WebSocketTransportProvider interface {
-	GetServerURL() string
-	GetAgentID() string
 	NewWebSocketTransport(serverURL, agentID string) models.IStreamingTransport
 }
 

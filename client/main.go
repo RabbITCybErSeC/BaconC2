@@ -31,6 +31,7 @@ func main() {
 	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID, cmdQueue)
 
 	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, &cfg)
+	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
 
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 	if err := client.Initialize(); err != nil {
