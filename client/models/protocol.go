@@ -1,5 +1,9 @@
 package models
 
+type StreamingConfig struct {
+	ShellType ShellType
+}
+
 type ITransportProtocol interface {
 	Initialize() error
 	Register(agent Agent) error
@@ -10,6 +14,6 @@ type ITransportProtocol interface {
 }
 
 type IStreamingTransport interface {
-	StartStreamingSession(sessionType string, config map[string]interface{}, resultChan chan<- CommandResult) error
+	StartStreamingSession(sessionType string, config StreamingConfig, resultChan chan<- CommandResult) error
 	CloseSession(sessionID string) error
 }

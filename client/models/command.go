@@ -1,5 +1,11 @@
 package models
 
+type WebSocketMessage struct {
+	Type string `json:"type"` // "input", "output", "error", "control"
+	Data string `json:"data"`
+	ID   string `json:"id,omitempty"`
+}
+
 type Command struct {
 	ID      string `json:"id"`
 	Command string `json:"command"`

