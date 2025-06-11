@@ -2,6 +2,7 @@ package models
 
 type StreamingConfig struct {
 	ShellType ShellType
+	Term      string
 }
 
 type ITransportProtocol interface {
