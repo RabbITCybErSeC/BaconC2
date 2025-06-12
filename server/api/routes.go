@@ -10,7 +10,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 
-	"github.com/RabbITCybErSeC/BaconC2/server/becongui"
+	"github.com/RabbITCybErSeC/BaconC2/becongui"
 	"github.com/gin-gonic/gin"
 )
 
