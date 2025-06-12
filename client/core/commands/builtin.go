@@ -68,16 +68,7 @@ func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.
 }
 
 func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, streamingTransport models.IStreamingTransport) models.CommandResult {
-	// Create default configuration
-	config, err := models.NewStreamingConfig(models.ShellTypeBash, "xterm")
-	if err != nil {
-		log.Printf("Failed to create streaming config for command ID %s: %v", cmd.ID, err)
-		return models.CommandResult{
-			ID:     cmd.ID,
-			Status: "error",
-			Output: map[string]string{"error": fmt.Sprintf("Failed to create config: %v", err)},
-		}
-	}
+	config := models.NewStreamingConfig(models.ShellTypeBash, "xterm")
 
 	resultChan := make(chan models.CommandResult, 1)
 	var wg sync.WaitGroup

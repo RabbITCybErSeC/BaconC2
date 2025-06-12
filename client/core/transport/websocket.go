@@ -119,7 +119,7 @@ func getSystemShells() ([]string, error) {
 }
 
 // StartStreamingSession initiates a WebSocket-based shell session.
-func (t *WebSocketTransport) StartStreamingSession(sessionType string, config models.StreamingConfig, resultChan chan<- models.CommandResult) error {
+func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *models.StreamingConfig, resultChan chan<- models.CommandResult) error {
 	if sessionType != "shell" {
 		err := fmt.Errorf("unsupported session type: %s", sessionType)
 		resultChan <- models.CommandResult{
@@ -196,7 +196,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config mo
 }
 
 // startShellProcess spawns a shell process based on the provided shell type.
-func (t *WebSocketTransport) startShellProcess(shellType models.ShellType, config models.StreamingConfig) (*exec.Cmd, error) {
+func (t *WebSocketTransport) startShellProcess(shellType models.ShellType, config *models.StreamingConfig) (*exec.Cmd, error) {
 	shellPath := ""
 	for _, shell := range t.shells {
 		base := filepath.Base(filepath.Clean(shell))

@@ -5,6 +5,13 @@ type StreamingConfig struct {
 	Term      string
 }
 
+func NewStreamingConfig(shellType ShellType, term string) *StreamingConfig {
+	return &StreamingConfig{
+		ShellType: shellType,
+		Term:      term,
+	}
+}
+
 type ITransportProtocol interface {
 	Initialize() error
 	Register(agent Agent) error
@@ -15,6 +22,6 @@ type ITransportProtocol interface {
 }
 
 type IStreamingTransport interface {
-	StartStreamingSession(sessionType string, config StreamingConfig, resultChan chan<- CommandResult) error
+	StartStreamingSession(sessionType string, config *StreamingConfig, resultChan chan<- CommandResult) error
 	CloseSession(sessionID string) error
 }

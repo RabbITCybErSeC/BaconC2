@@ -21,9 +21,9 @@ type DefaultCommandExecutor struct {
 	commandRegistry *commands.CommandHandlerRegistry
 }
 
-func NewDefaultCommandExecutor(queue queue.ICommandQueue, resultsQueue queue.IResultQueue, transport models.ITransportProtocol, cfg *config.AgentConfig) models.ICommandExecutor {
+func NewDefaultCommandExecutor(queue queue.ICommandQueue, resultsQueue queue.IResultQueue, transport models.ITransportProtocol, streamingTransport models.IStreamingTransport, cfg *config.AgentConfig) models.ICommandExecutor {
 	registry := commands.NewCommandHandlerRegistry()
-	commands.RegisterBuiltInCommands(registry, resultsQueue, transport)
+	commands.RegisterBuiltInCommands(registry, resultsQueue, transport, streamingTransport)
 	return &DefaultCommandExecutor{
 		queue:           queue,
 		resultsQueue:    resultsQueue,
