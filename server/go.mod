@@ -1,11 +1,9 @@
 module github.com/RabbITCybErSeC/BaconC2/server
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.24.1
 
 require (
-	github.com/RabbITCybErSeC/BaconC2 v0.0.1-alpha
+	github.com/RabbITCybErSeC/BaconC2/becongui v0.0.0-20250625172818-efdfc4c7717e
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0

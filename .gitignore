@@ -32,3 +32,4 @@ docker-images
 # Go workspace file
 go.work
 go.work.sum
+go.work
