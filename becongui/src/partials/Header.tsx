@@ -4,8 +4,6 @@ import {
   Search,
   User,
   ChevronDown,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import BackendStatusIndicator from './../components/common/BackendStatusIndicator';
 import SearchModal from './../components/search/SearchModal';
@@ -19,12 +17,12 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
   userName,
   onSidebarToggle,
-  onThemeChange,
+  // onThemeChange,
 }) => {
   const [userMenuOpen, setUserMenuOpen] = useState<boolean>(false);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
 
-  const handleThemeToggle = onThemeChange ?? (() => console.warn('Theme toggle handler (onThemeChange) not provided to Header component'));
+  // const handleThemeToggle = onThemeChange ?? (() => console.warn('Theme toggle handler (onThemeChange) not provided to Header component'));
 
   const handleUserMenuToggle = () => {
     setUserMenuOpen(prev => !prev);

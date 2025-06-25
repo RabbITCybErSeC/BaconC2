@@ -3,6 +3,7 @@ BINARY_NAME = bacon-server
 CLIENT_BINARY_NAME = bacon-client
 SERV_SRC_DIR = ./server
 CLIENT_SRC_DIR = ./client
+FRONT_END_DIR = ./becongui
 BIN_DIR = ./bin
 
 TARGET_OS ?= darwin
@@ -18,13 +19,17 @@ CLIENT_BUILD_FLAGS = -trimpath -tags "$(CLIENT_TAGS)" -ldflags "$(LDFLAGS)"
 SERVER_OUTPUT = $(BIN_DIR)/$(BINARY_NAME)_$(TARGET)
 CLIENT_OUTPUT = $(BIN_DIR)/$(CLIENT_BINARY_NAME)_$(TARGET)
 
-.PHONY: all clean compile-server compile-client run-server run-client
+.PHONY: all clean compile-server compile-client run-server run-client build-front-end
 
 all: compile-server compile-client
 
 $(BIN_DIR):
 	@mkdir -p $(BIN_DIR)
 
+build-front-end: 
+	@echo "Building front-end"
+	@cd $(FRONT_END_DIR) && npm run build
+	
 compile-server: $(BIN_DIR)
 	@echo "Building server for $(TARGET)..."
 	@cd $(SERV_SRC_DIR) && GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) CGO_ENABLED=1 $(GO) build $(SERVER_BUILD_FLAGS) -o ../$(SERVER_OUTPUT) .

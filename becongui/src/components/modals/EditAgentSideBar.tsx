@@ -39,10 +39,12 @@ const EditAgentSideBar: React.FC<EditAgentSideBarProps> = ({ isOpen, onClose, ag
 
   useEffect(() => {
     if (isOpen) {
-      panelRef.current?.querySelector('.panel-close-button')?.focus();
+      const closeButton = panelRef.current?.querySelector('.panel-close-button');
+      if (closeButton instanceof HTMLElement) {
+        closeButton.focus();
+      }
     }
   }, [isOpen]);
-
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -85,9 +87,8 @@ const EditAgentSideBar: React.FC<EditAgentSideBarProps> = ({ isOpen, onClose, ag
       <div
         id="editAgentModal"
         ref={panelRef}
-        className={`fixed top-0 right-0 h-full bg-white dark:bg-gray-800 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 w-full sm:w-2/3 lg:w-1/3 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full bg-white dark:bg-gray-800 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 w-full sm:w-2/3 lg:w-1/3 ${isOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
         aria-hidden={!isOpen}
       >
         <div className="p-8 h-full overflow-y-auto">
