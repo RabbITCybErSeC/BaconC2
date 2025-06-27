@@ -13,7 +13,8 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/agent"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
-	"github.com/RabbITCybErSeC/BaconC2/client/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/google/uuid"
 )
 
@@ -24,9 +25,8 @@ func main() {
 		BeaconInterval: 10 * time.Second, // Default beacon interval
 		Protocol:       "http",
 	}
-
-	cmdQueue := queue.NewMemoryCommandQueue()
-	resultQueue := queue.NewMemoryResultQueue()
+	cmdQueue := queue.NewMemoryQueue[models.Command]()
+	resultQueue := queue.NewMemoryQueue[models.CommandResult]()
 
 	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID, cmdQueue)
 

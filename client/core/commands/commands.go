@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 )
 
 type CommandHandler func(cmd models.Command) models.CommandResult

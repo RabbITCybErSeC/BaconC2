@@ -1,12 +1,12 @@
 package models
 
 type Agent struct {
-	ID           string             `json:"id"`
-	Hostname     string             `json:"hostname"`
-	IP           string             `json:"ip"`
-	OS           string             `json:"os"`
-	Protocol     string             `json:"protocol"`
-	ExtendedInfo *ExtendedAgentInfo `json:"extended_info,omitempty"`
+	ID           string             `json:"id" gorm:"column:agent_id;primaryKey"`
+	Hostname     string             `json:"hostname" gorm:"column:hostname"`
+	IP           string             `json:"ip" gorm:"column:ip"`
+	OS           string             `json:"os" gorm:"column:os"`
+	Protocol     string             `json:"protocol" gorm:"column:protocol"`
+	ExtendedInfo *ExtendedAgentInfo `json:"extended_info,omitempty" gorm:"column:extended_info;type:jsonb"`
 }
 
 type ExtendedAgentInfo struct {

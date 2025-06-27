@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
-	"github.com/RabbITCybErSeC/BaconC2/server/models"
+	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
 	"gorm.io/gorm"
 )
 
@@ -29,14 +30,14 @@ func NewAgentStore(repo db.AgentRepositoryInterface) *AgentStore {
 	}
 }
 
-func (s *AgentStore) Register(agent *models.Agent) error {
+func (s *AgentStore) Register(agent *local_models.Agent) error {
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
 	agent.Commands = []models.Command{}
 	return s.db.Save(agent)
 }
 
-func (s *AgentStore) Get(id string) (*models.Agent, error) {
+func (s *AgentStore) Get(id string) (*local_models.Agent, error) {
 	agent, err := s.db.Get(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

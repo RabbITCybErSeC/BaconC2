@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/RabbITCybErSeC/BaconC2/client/models"
-	"github.com/RabbITCybErSeC/BaconC2/client/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+
+	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
 
 const (
@@ -26,7 +28,7 @@ type HTTPTransport struct {
 	beaconInterval time.Duration
 }
 
-func NewHTTPTransport(serverURL, agentID string, commandQueue queue.ICommandQueue) models.ITransportProtocol {
+func NewHTTPTransport(serverURL, agentID string, commandQueue queue.ICommandQueue) local_models.ITransportProtocol {
 	return &HTTPTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,

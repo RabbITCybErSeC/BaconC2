@@ -3,8 +3,16 @@ module github.com/RabbITCybErSeC/BaconC2/client
 go 1.24.1
 
 require (
+	github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-00010101000000-000000000000
+	github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/shirou/gopsutil/v4 v4.25.5
+)
+
+replace (
+	github.com/RabbITCybErSeC/BaconC2/pkg/models => ../pkg/models
+	github.com/RabbITCybErSeC/BaconC2/pkg/queue => ../pkg/queue
 )
 
 require (
