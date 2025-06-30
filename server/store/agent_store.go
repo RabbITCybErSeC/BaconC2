@@ -11,9 +11,9 @@ import (
 )
 
 type AgentStoreInterface interface {
-	Register(agent *models.Agent) error
-	Get(id string) (*models.Agent, error)
-	List() ([]*models.Agent, error)
+	Register(agent *local_models.ServerAgentModel) error
+	Get(id string) (*local_models.ServerAgentModel, error)
+	List() ([]*local_models.ServerAgentModel, error)
 	UpdateLastSeen(id string) error
 	UpdateAgentCommands(id string, cmd models.Command) error
 }
@@ -30,14 +30,14 @@ func NewAgentStore(repo db.AgentRepositoryInterface) *AgentStore {
 	}
 }
 
-func (s *AgentStore) Register(agent *local_models.Agent) error {
+func (s *AgentStore) Register(agent *local_models.ServerAgentModel) error {
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
-	agent.Commands = []models.Command{}
+	agent.Commands = []local_models.AgentCommand{}
 	return s.db.Save(agent)
 }
 
-func (s *AgentStore) Get(id string) (*local_models.Agent, error) {
+func (s *AgentStore) Get(id string) (*local_models.ServerAgentModel, error) {
 	agent, err := s.db.Get(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -48,14 +48,14 @@ func (s *AgentStore) Get(id string) (*local_models.Agent, error) {
 	return agent, nil
 }
 
-func (s *AgentStore) List() ([]*models.Agent, error) {
+func (s *AgentStore) List() ([]*local_models.ServerAgentModel, error) {
 	agents, err := s.db.GetAll()
 	if err != nil {
 		return nil, err
 	}
 
 	now := time.Now()
-	agentPtrs := make([]*models.Agent, len(agents))
+	agentPtrs := make([]*local_models.ServerAgentModel, len(agents))
 
 	for i := range agents {
 		if now.Sub(agents[i].LastSeen) > 5*time.Minute {
@@ -78,7 +78,7 @@ func (s *AgentStore) UpdateLastSeen(id string) error {
 	return s.db.Save(agent)
 }
 
-func (s *AgentStore) UpdateAgentCommands(id string, cmd models.Command) error {
+func (s *AgentStore) UpdateAgentCommands(id string, cmd local_models.AgentCommand) error {
 	agent, err := s.Get(id)
 	if err != nil {
 		return err

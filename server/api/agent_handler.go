@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/RabbITCybErSeC/BaconC2/server/models"
-	"github.com/RabbITCybErSeC/BaconC2/server/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
+	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
 	"github.com/RabbITCybErSeC/BaconC2/server/store"
 	"github.com/gin-gonic/gin"
 )
@@ -14,12 +15,12 @@ import (
 // AgentHandler handles agent-related operations
 type AgentHandler struct {
 	agentStore   store.AgentStoreInterface
-	commandQueue queue.CommandQueue
+	commandQueue queue.IServerCommandQueue
 	engine       *gin.Engine
 }
 
 // NewAgentHandler initializes a new AgentHandler
-func NewAgentHandler(agentStore store.AgentStoreInterface, commandQueue queue.CommandQueue, engine *gin.Engine) *AgentHandler {
+func NewAgentHandler(agentStore store.AgentStoreInterface, commandQueue queue.IServerCommandQueue, engine *gin.Engine) *AgentHandler {
 	return &AgentHandler{
 		agentStore:   agentStore,
 		commandQueue: commandQueue,
@@ -34,7 +35,7 @@ func (h *AgentHandler) GinEngine() *gin.Engine {
 
 // handleRegister handles agent registration
 func (h *AgentHandler) handleRegister(c *gin.Context) {
-	var agent models.Agent
+	var agent local_models.ServerAgentModel
 	if err := c.ShouldBindJSON(&agent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -42,8 +43,9 @@ func (h *AgentHandler) handleRegister(c *gin.Context) {
 
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
-	agent.Commands = []models.Command{}
-	agent.Protocol = "http"
+	agent.Commands = []local_models.AgentCommand{}
+	agent.BaseAgentModel = models.Agent{}
+	agent.BaseAgentModel.Protocol = "http"
 
 	if err := h.agentStore.Register(&agent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

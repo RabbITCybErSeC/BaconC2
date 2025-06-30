@@ -9,10 +9,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/server/api"
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
-	"github.com/RabbITCybErSeC/BaconC2/server/queue"
 	"github.com/RabbITCybErSeC/BaconC2/server/service"
 	"github.com/RabbITCybErSeC/BaconC2/server/store"
 	"github.com/RabbITCybErSeC/BaconC2/server/transport"
@@ -26,7 +27,7 @@ func main() {
 	agentRepo := db.NewAgentRepository(cfg.DB)
 	agentStore := store.NewAgentStore(agentRepo)
 	userRepo := db.NewUserRepository(cfg.DB)
-	commandQueue := queue.NewMemoryCommandQueue()
+	commandQueue := queue.NewMemoryMultiQueue[models.Command]()
 
 	gin.SetMode(gin.ReleaseMode)
 

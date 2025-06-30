@@ -92,10 +92,10 @@ func initializeDatabase(dbPath string) (*gorm.DB, error) {
 }
 
 func runMigrations(db *gorm.DB) error {
-	if err := db.AutoMigrate(&models.Command{}); err != nil {
+	if err := db.AutoMigrate(&models.AgentCommand{}); err != nil {
 		return err
 	}
-	if err := db.AutoMigrate(&models.Agent{}); err != nil {
+	if err := db.AutoMigrate(&models.ServerAgentModel{}); err != nil {
 		return err
 	}
 	if err := db.AutoMigrate(&models.User{}); err != nil {

@@ -3,20 +3,20 @@ package service
 import (
 	"log"
 
+	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
-	"github.com/RabbITCybErSeC/BaconC2/server/queue"
 	"github.com/RabbITCybErSeC/BaconC2/server/store"
 	"github.com/RabbITCybErSeC/BaconC2/server/transport"
 )
 
 type Server struct {
 	agentStore   store.AgentStoreInterface
-	commandQueue queue.CommandQueue
+	commandQueue queue.IServerCommandQueue
 	protocols    map[string]transport.TransportProtocol
 	config       *config.ServerConfig
 }
 
-func NewServer(agentStore store.AgentStoreInterface, commandQueue queue.CommandQueue, config *config.ServerConfig) *Server {
+func NewServer(agentStore store.AgentStoreInterface, commandQueue queue.IServerCommandQueue, config *config.ServerConfig) *Server {
 	return &Server{
 		agentStore:   agentStore,
 		commandQueue: commandQueue,

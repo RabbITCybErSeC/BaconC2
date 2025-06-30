@@ -8,7 +8,7 @@ type ICommandExecutor interface {
 }
 
 type ICommandQueue interface {
-	GenericQueue[models.Command]
+	MultiQueue[models.Command]
 }
 
 type IResultQueue interface {
