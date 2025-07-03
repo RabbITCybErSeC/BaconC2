@@ -9,11 +9,11 @@ import (
 )
 
 type FrontendHandler struct {
-	agentStore store.AgentStoreInterface
+	agentStore store.IAgentStore
 	engine     *gin.Engine
 }
 
-func NewFrontendHandler(agentStore store.AgentStoreInterface, engine *gin.Engine) *FrontendHandler {
+func NewFrontendHandler(agentStore store.IAgentStore, engine *gin.Engine) *FrontendHandler {
 	return &FrontendHandler{
 		agentStore: agentStore,
 		engine:     engine,

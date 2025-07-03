@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
 	"gorm.io/gorm"
 )
 
-type AgentStoreInterface interface {
+type IAgentStore interface {
 	Register(agent *local_models.ServerAgentModel) error
 	Get(id string) (*local_models.ServerAgentModel, error)
 	List() ([]*local_models.ServerAgentModel, error)
 	UpdateLastSeen(id string) error
-	UpdateAgentCommands(id string, cmd models.Command) error
+	UpdateAgentCommands(id string, cmd local_models.AgentCommand) error
 }
 
 var ErrAgentNotFound = fmt.Errorf("agent not found")
@@ -89,7 +88,7 @@ func (s *AgentStore) UpdateAgentCommands(id string, cmd local_models.AgentComman
 
 	found := false
 	for i, existingCmd := range agent.Commands {
-		if existingCmd.ID == cmd.ID {
+		if existingCmd.AgentID == cmd.AgentID {
 			agent.Commands[i] = cmd
 			found = true
 			break

@@ -14,13 +14,13 @@ import (
 
 // AgentHandler handles agent-related operations
 type AgentHandler struct {
-	agentStore   store.AgentStoreInterface
+	agentStore   store.IAgentStore
 	commandQueue queue.IServerCommandQueue
 	engine       *gin.Engine
 }
 
 // NewAgentHandler initializes a new AgentHandler
-func NewAgentHandler(agentStore store.AgentStoreInterface, commandQueue queue.IServerCommandQueue, engine *gin.Engine) *AgentHandler {
+func NewAgentHandler(agentStore store.IAgentStore, commandQueue queue.IServerCommandQueue, engine *gin.Engine) *AgentHandler {
 	return &AgentHandler{
 		agentStore:   agentStore,
 		commandQueue: commandQueue,
@@ -75,8 +75,9 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 	}
 
 	cmd, hasCommand := h.commandQueue.Get(agentID)
+	agentCmd := local_models.AgentCommand{AgentID: agentID, Command: cmd}
 	if hasCommand {
-		if err := h.agentStore.UpdateAgentCommands(agentID, cmd); err != nil {
+		if err := h.agentStore.UpdateAgentCommands(agentID, agentCmd); err != nil {
 			fmt.Printf("Error updating agent commands: %v\n", err)
 		}
 		c.JSON(http.StatusOK, gin.H{
@@ -100,7 +101,7 @@ func (h *AgentHandler) handleCommandResult(c *gin.Context) {
 		return
 	}
 
-	var result models.Command
+	var result local_models.AgentCommand
 	if err := c.ShouldBindJSON(&result); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
