@@ -36,15 +36,18 @@ func (h *AgentHandler) GinEngine() *gin.Engine {
 // handleRegister handles agent registration
 func (h *AgentHandler) handleRegister(c *gin.Context) {
 	var agent local_models.ServerAgentModel
-	if err := c.ShouldBindJSON(&agent); err != nil {
+	var incomingAgent models.Agent
+
+	if err := c.ShouldBindJSON(&incomingAgent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	fmt.Println(incomingAgent)
 
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
 	agent.Commands = []local_models.AgentCommand{}
-	agent.BaseAgentModel = models.Agent{}
+	agent.BaseAgentModel = incomingAgent
 	agent.BaseAgentModel.Protocol = "http"
 
 	if err := h.agentStore.Register(&agent); err != nil {
