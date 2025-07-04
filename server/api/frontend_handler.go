@@ -25,7 +25,7 @@ func (h *FrontendHandler) GinEngine() *gin.Engine {
 }
 
 func (h *FrontendHandler) handleListAgents(c *gin.Context) {
-	agentList, err := h.agentStore.List()
+	agentList, err := h.agentStore.GetAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

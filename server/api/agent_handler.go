@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -42,7 +41,6 @@ func (h *AgentHandler) handleRegister(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println(incomingAgent)
 
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
@@ -50,7 +48,7 @@ func (h *AgentHandler) handleRegister(c *gin.Context) {
 	agent.BaseAgentModel = incomingAgent
 	agent.BaseAgentModel.Protocol = "http"
 
-	if err := h.agentStore.Register(&agent); err != nil {
+	if err := h.agentStore.Save(&agent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -72,19 +70,21 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 		return
 	}
 
-	if err := h.agentStore.UpdateLastSeen(agentID); err != nil {
+	// if err := h.agentStore.UpdateCommandStatus(agentID); err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	commands, err := h.agentStore.GetPendingCommands(agentID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	cmd, hasCommand := h.commandQueue.Get(agentID)
-	agentCmd := local_models.AgentCommand{AgentID: agentID, Command: cmd}
-	if hasCommand {
-		if err := h.agentStore.UpdateAgentCommands(agentID, agentCmd); err != nil {
-			fmt.Printf("Error updating agent commands: %v\n", err)
-		}
+	if len(commands) > 0 {
+		cmd := commands[0]
 		c.JSON(http.StatusOK, gin.H{
-			"command":    cmd,
+			"command":    cmd.Command,
 			"nextBeacon": 10, // Recommend beaconing again in 10 seconds
 		})
 		return
@@ -116,7 +116,9 @@ func (h *AgentHandler) handleCommandResult(c *gin.Context) {
 		return
 	}
 
-	if err := h.agentStore.UpdateAgentCommands(agentID, result); err != nil {
+	result.AgentID = agentID
+	result.Command.Status = "completed"
+	if err := h.agentStore.AddCommand(&result); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -144,13 +146,16 @@ func (h *AgentHandler) handleAddCommand(c *gin.Context) {
 		return
 	}
 
-	cmd.Status = "pending"
-	cmd.ID = fmt.Sprintf("%d", time.Now().UnixNano())
+	agentCmd := local_models.AgentCommand{
+		AgentID: agentID,
+		Command: cmd,
+		ID:      uint(time.Now().UnixNano()),
+	}
 
-	if err := h.commandQueue.Add(agentID, cmd); err != nil {
+	if err := h.agentStore.AddCommand(&agentCmd); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "queued", "id": cmd.ID})
+	c.JSON(http.StatusOK, gin.H{"status": "queued", "id": agentCmd.ID})
 }
