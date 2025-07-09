@@ -6,24 +6,24 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
+	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
-	"github.com/RabbITCybErSeC/BaconC2/server/store"
 	"github.com/gin-gonic/gin"
 )
 
 // AgentHandler handles agent-related operations
 type AgentHandler struct {
-	agentStore   store.IAgentStore
-	commandQueue queue.IServerCommandQueue
-	engine       *gin.Engine
+	agentRepository db.IAgentRepository
+	commandQueue    queue.IServerCommandQueue
+	engine          *gin.Engine
 }
 
 // NewAgentHandler initializes a new AgentHandler
-func NewAgentHandler(agentStore store.IAgentStore, commandQueue queue.IServerCommandQueue, engine *gin.Engine) *AgentHandler {
+func NewAgentHandler(agentRepository db.IAgentRepository, commandQueue queue.IServerCommandQueue, engine *gin.Engine) *AgentHandler {
 	return &AgentHandler{
-		agentStore:   agentStore,
-		commandQueue: commandQueue,
-		engine:       engine,
+		agentRepository: agentRepository,
+		commandQueue:    commandQueue,
+		engine:          engine,
 	}
 }
 
@@ -48,7 +48,7 @@ func (h *AgentHandler) handleRegister(c *gin.Context) {
 	agent.BaseAgentModel = incomingAgent
 	agent.BaseAgentModel.Protocol = "http"
 
-	if err := h.agentStore.Save(&agent); err != nil {
+	if err := h.agentRepository.Save(&agent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -64,7 +64,7 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 		return
 	}
 
-	_, err := h.agentStore.Get(agentID)
+	_, err := h.agentRepository.Get(agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -75,7 +75,7 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 	// 	return
 	// }
 
-	commands, err := h.agentStore.GetPendingCommands(agentID)
+	commands, err := h.agentRepository.GetPendingCommands(agentID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -110,7 +110,7 @@ func (h *AgentHandler) handleCommandResult(c *gin.Context) {
 		return
 	}
 
-	_, err := h.agentStore.Get(agentID)
+	_, err := h.agentRepository.Get(agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -118,7 +118,7 @@ func (h *AgentHandler) handleCommandResult(c *gin.Context) {
 
 	result.AgentID = agentID
 	result.Command.Status = "completed"
-	if err := h.agentStore.AddCommand(&result); err != nil {
+	if err := h.agentRepository.AddCommand(&result); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -140,7 +140,7 @@ func (h *AgentHandler) handleAddCommand(c *gin.Context) {
 		return
 	}
 
-	_, err := h.agentStore.Get(agentID)
+	_, err := h.agentRepository.Get(agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -152,7 +152,7 @@ func (h *AgentHandler) handleAddCommand(c *gin.Context) {
 		ID:      uint(time.Now().UnixNano()),
 	}
 
-	if err := h.agentStore.AddCommand(&agentCmd); err != nil {
+	if err := h.agentRepository.AddCommand(&agentCmd); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

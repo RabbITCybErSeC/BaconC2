@@ -4,19 +4,19 @@ import (
 	"net/http"
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
-	"github.com/RabbITCybErSeC/BaconC2/server/store"
+	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	"github.com/gin-gonic/gin"
 )
 
 type FrontendHandler struct {
-	agentStore store.IAgentStore
-	engine     *gin.Engine
+	agentRepository db.IAgentRepository
+	engine          *gin.Engine
 }
 
-func NewFrontendHandler(agentStore store.IAgentStore, engine *gin.Engine) *FrontendHandler {
+func NewFrontendHandler(agentRepository db.IAgentRepository, engine *gin.Engine) *FrontendHandler {
 	return &FrontendHandler{
-		agentStore: agentStore,
-		engine:     engine,
+		agentRepository: agentRepository,
+		engine:          engine,
 	}
 }
 
@@ -25,7 +25,7 @@ func (h *FrontendHandler) GinEngine() *gin.Engine {
 }
 
 func (h *FrontendHandler) handleListAgents(c *gin.Context) {
-	agentList, err := h.agentStore.GetAll()
+	agentList, err := h.agentRepository.GetAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

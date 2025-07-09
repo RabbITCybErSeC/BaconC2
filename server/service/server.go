@@ -5,23 +5,23 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
-	"github.com/RabbITCybErSeC/BaconC2/server/store"
+	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	"github.com/RabbITCybErSeC/BaconC2/server/transport"
 )
 
 type Server struct {
-	agentStore   store.IAgentStore
-	commandQueue queue.IServerCommandQueue
-	protocols    map[string]transport.TransportProtocol
-	config       *config.ServerConfig
+	agentRepository db.IAgentRepository
+	commandQueue    queue.IServerCommandQueue
+	protocols       map[string]transport.TransportProtocol
+	config          *config.ServerConfig
 }
 
-func NewServer(agentStore store.IAgentStore, commandQueue queue.IServerCommandQueue, config *config.ServerConfig) *Server {
+func NewServer(db db.IAgentRepository, commandQueue queue.IServerCommandQueue, config *config.ServerConfig) *Server {
 	return &Server{
-		agentStore:   agentStore,
-		commandQueue: commandQueue,
-		protocols:    make(map[string]transport.TransportProtocol),
-		config:       config,
+		agentRepository: db,
+		commandQueue:    commandQueue,
+		protocols:       make(map[string]transport.TransportProtocol),
+		config:          config,
 	}
 }
 

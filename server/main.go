@@ -15,7 +15,6 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	"github.com/RabbITCybErSeC/BaconC2/server/service"
-	"github.com/RabbITCybErSeC/BaconC2/server/store"
 	"github.com/RabbITCybErSeC/BaconC2/server/transport"
 	"github.com/gin-gonic/gin"
 )
@@ -25,25 +24,24 @@ func main() {
 	cfg := config.NewServerConfig()
 
 	agentRepo := db.NewAgentRepository(cfg.DB)
-	agentStore := store.NewAgentStore(agentRepo)
 	userRepo := db.NewUserRepository(cfg.DB)
 	commandQueue := queue.NewMemoryMultiQueue[models.Command]()
 
 	gin.SetMode(gin.ReleaseMode)
 
-	server := service.NewServer(agentStore, commandQueue, cfg)
+	server := service.NewServer(agentRepo, commandQueue, cfg)
 
 	if cfg.AgentHTTPConfig.Enabled {
 		fmt.Println("enabled")
 		agentAPIEngine := gin.Default()
-		agentAPIHandler := api.NewAgentHandler(agentStore, commandQueue, agentAPIEngine)
+		agentAPIHandler := api.NewAgentHandler(agentRepo, commandQueue, agentAPIEngine)
 		httpTransport := transport.NewHTTPTransport(cfg.AgentHTTPConfig, agentAPIHandler)
 		api.RegisterAgentRoutes(agentAPIHandler)
 		server.AddTransport(httpTransport)
 	}
 
 	frontendEngine := gin.Default()
-	frontendHandler := api.NewFrontendHandler(agentStore, frontendEngine)
+	frontendHandler := api.NewFrontendHandler(agentRepo, frontendEngine)
 	api.RegisterFrontendRoutes(frontendHandler, cfg)
 	api.RegisterAuthRoutes(frontendEngine, cfg, userRepo)
 	api.StaticHandler(frontendEngine)
