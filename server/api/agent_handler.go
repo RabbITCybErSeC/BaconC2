@@ -42,12 +42,11 @@ func (h *AgentHandler) handleRegister(c *gin.Context) {
 		return
 	}
 
+	agent.Agent = incomingAgent
+	agent.Protocol = "http"
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
 	agent.Commands = []local_models.AgentCommand{}
-	agent.BaseAgentModel = incomingAgent
-	agent.BaseAgentModel.Protocol = "http"
-
 	if err := h.agentRepository.Save(&agent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

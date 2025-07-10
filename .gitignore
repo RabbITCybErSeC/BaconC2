@@ -33,3 +33,4 @@ docker-images
 go.work
 go.work.sum
 go.work
+server/agents.db

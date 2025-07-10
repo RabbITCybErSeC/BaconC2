@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
+	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,9 +31,9 @@ func (h *FrontendHandler) handleListAgents(c *gin.Context) {
 		return
 	}
 
-	jsonAgents := make([]models.Agent, 0, len(agentList))
+	jsonAgents := make([]local_models.ServerAgentModel, 0, len(agentList))
 	for _, agent := range agentList {
-		jsonAgents = append(jsonAgents, *&agent.BaseAgentModel)
+		jsonAgents = append(jsonAgents, agent)
 	}
 
 	c.JSON(http.StatusOK, jsonAgents)

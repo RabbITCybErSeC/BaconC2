@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../partials/Sidebar';
 import Header from '../partials/Header';
@@ -6,18 +6,20 @@ import Banner from '../partials/Banner';
 
 const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-    document.documentElement.classList.toggle('dark');
-  };
+  
+  // Always use dark theme
+  useEffect(() => {
+    // Add dark class to html element
+    const html = document.documentElement;
+    html.classList.add('dark');
+    // Set data-theme attribute for any components that might use it
+    html.setAttribute('data-theme', 'dark');
+    // Ensure background color is set
+    document.body.classList.add('bg-slate-900');
+  }, []);
 
   return (
-    <div
-      className={`flex h-screen overflow-hidden ${theme === 'light' ? 'bg-gray-100' : 'bg-slate-800'
-        }`} // Use theme here
-    >
+    <div className="flex h-screen overflow-hidden bg-slate-800">
       {/* Sidebar component */}
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
@@ -27,7 +29,6 @@ const DashboardLayout: React.FC = () => {
         <Header
           userName="User" // Replace with actual user data
           onSidebarToggle={() => setSidebarOpen((prev) => !prev)}
-          onThemeChange={toggleTheme}
         />
 
         <main className="grow">

@@ -16,13 +16,13 @@ type AgentCommand struct {
 }
 
 type ServerAgentModel struct {
-	BaseAgentModel models.Agent             `json:"-" gorm:"embedded"`
-	LastSeen       time.Time                `json:"last_seen" gorm:"column:last_seen"`
-	IsActive       bool                     `json:"is_active" gorm:"column:is_active"`
-	Commands       []AgentCommand           `json:"-" gorm:"foreignKey:AgentID"`
-	ExtendedInfo   models.ExtendedAgentInfo `json:"extended_info" gorm:"foreignKey:ID;references:AgentID"`
-	Sessions       []AgentSession           `json:"sessions,omitempty" gorm:"foreignKey:AgentID;references:ID"`
-	CommandMu      sync.Mutex               `json:"-" gorm:"-"`
+	models.Agent `gorm:"embedded"`
+	LastSeen     time.Time                `json:"last_seen" gorm:"column:last_seen"`
+	IsActive     bool                     `json:"is_active" gorm:"column:is_active"`
+	Commands     []AgentCommand           `json:"-" gorm:"foreignKey:AgentID"`
+	ExtendedInfo models.ExtendedAgentInfo `json:"extended_info" gorm:"foreignKey:ID;references:AgentID"`
+	Sessions     []AgentSession           `json:"sessions,omitempty" gorm:"foreignKey:AgentID;references:ID"`
+	CommandMu    sync.Mutex               `json:"-" gorm:"-"`
 }
 
 type AgentSession struct {

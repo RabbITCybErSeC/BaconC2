@@ -1,7 +1,7 @@
-github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-20250709064533-d5404de0fdaa h1:hpEprYuzH1qcQMrK2Vzzl1fQtlqf13g/iw9bEF4e4to=
-github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-20250709064533-d5404de0fdaa/go.mod h1:4418EcaCoDvtkjeggFFwoHO9i8JiF6CV8ptccHnE1nY=
-github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-20250709064533-d5404de0fdaa h1:Vizjhd+ce2WglkAGbFaodaQhP1OVMCG12VlN/nIfop8=
-github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-20250709064533-d5404de0fdaa/go.mod h1:jOwWN1xOi3y17mdgvxceteXx6roiALUAZ509n7tdR4g=
+github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-20250710155621-92f792ff57a3 h1:UNxskw24yy1IVDqRHUDr4etO1Gm9cc1Peul9NNCBAGE=
+github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-20250710155621-92f792ff57a3/go.mod h1:4418EcaCoDvtkjeggFFwoHO9i8JiF6CV8ptccHnE1nY=
+github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-20250710155621-92f792ff57a3 h1:bYUYsWlMCs4Yyaax90f7tlSsB/z25ZVlvjUYQEi7cVo=
+github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-20250710155621-92f792ff57a3/go.mod h1:jOwWN1xOi3y17mdgvxceteXx6roiALUAZ509n7tdR4g=
 github.com/bytedance/sonic v1.13.3 h1:MS8gmaH16Gtirygw7jV91pDCN33NyMrPbN7qiYhEsF0=
 github.com/bytedance/sonic v1.13.3/go.mod h1:o68xyaF9u2gvVBuGHPlUVCy+ZfmNNO5ETf1+KgkJhz4=
 github.com/bytedance/sonic/loader v0.1.1/go.mod h1:ncP89zfokxS5LZrJxl5z0UJcsk4M4yY2JpfqGeCtNLU=
@@ -40,6 +40,8 @@ github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=
 github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=

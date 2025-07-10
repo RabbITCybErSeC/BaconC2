@@ -49,8 +49,8 @@ func NewServerConfig() *ServerConfig {
 	_ = godotenv.Load("config/.env") // config directory
 
 	httpPort := flag.Int("http-port", getIntEnv("HTTP_PORT", 8080), "HTTP server port")
+	agentPort := flag.Int("agent-port", getIntEnv("AGENT_PORT", 8081), "Agent server port")
 	udpPort := flag.Int("udp-port", getIntEnv("UDP_PORT", 8081), "UDP server port")
-	agentPort := flag.Int("agent-port", getIntEnv("AGENT_PORT", 8082), "Agent server port")
 	enableUDP := flag.Bool("enable-udp", getBoolEnv("ENABLE_UDP", false), "Enable UDP transport")
 	flag.Parse()
 

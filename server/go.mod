@@ -2,15 +2,19 @@ module github.com/RabbITCybErSeC/BaconC2/server
 
 go 1.24.1
 
-replace github.com/RabbITCybErSeC/BaconC2/becongui => ../becongui/
+replace (
+	github.com/RabbITCybErSeC/BaconC2/becongui => ../becongui/
+	github.com/RabbITCybErSeC/BaconC2/pkg/ => ../pkg/
+)
 
 require (
 	github.com/RabbITCybErSeC/BaconC2/becongui v0.0.0-00010101000000-000000000000
-	github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-20250709064533-d5404de0fdaa
-	github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-20250709064533-d5404de0fdaa
+	github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-20250710155621-92f792ff57a3
+	github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-20250710155621-92f792ff57a3
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
+	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.39.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.0
