@@ -40,7 +40,7 @@ compile-client: $(BIN_DIR)
 	@cd $(CLIENT_SRC_DIR) && GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) CGO_ENABLED=0 $(GO) build $(CLIENT_BUILD_FLAGS) -o ../$(CLIENT_OUTPUT) .
 	@echo "Client build completed: $(CLIENT_OUTPUT)"
 
-run-server:
+run-server: build-front-end
 	@echo "Running server..."
 	@cd $(SERV_SRC_DIR) && $(GO) run -tags "$(SERVER_TAGS)" .
 
