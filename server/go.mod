@@ -2,8 +2,12 @@ module github.com/RabbITCybErSeC/BaconC2/server
 
 go 1.24.1
 
+replace github.com/RabbITCybErSeC/BaconC2/becongui => ../becongui/
+
 require (
-	github.com/RabbITCybErSeC/BaconC2/becongui v0.0.0-20250625172818-efdfc4c7717e
+	github.com/RabbITCybErSeC/BaconC2/becongui v0.0.0-00010101000000-000000000000
+	github.com/RabbITCybErSeC/BaconC2/pkg/models v0.0.0-20250709064533-d5404de0fdaa
+	github.com/RabbITCybErSeC/BaconC2/pkg/queue v0.0.0-20250709064533-d5404de0fdaa
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
