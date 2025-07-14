@@ -38,3 +38,14 @@ func (h *FrontendHandler) handleListAgents(c *gin.Context) {
 
 	c.JSON(http.StatusOK, jsonAgents)
 }
+
+func (h *FrontendHandler) handleGetAgentByID(c *gin.Context) {
+	id := c.Param("id")
+	agent, err := h.agentRepository.Get(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, agent)
+}
