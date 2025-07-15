@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { type Agent } from '../../models/Agent';
+import { type Agent } from '../../models/Tables';
 
 interface EditAgentSideBarProps {
   isOpen: boolean;
