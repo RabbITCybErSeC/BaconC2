@@ -7,8 +7,8 @@ export interface Agent {
   isActive: boolean;
   lastSeen: string;
   extended_info: string;
-  sessions?: AgentSession[];
 }
+
 export interface AgentSession {
   id: number;
   agent_id: string;
@@ -21,7 +21,6 @@ export interface AgentSession {
   created_at: string;
   updated_at: string;
 }
-
 
 export interface NetworkInterface {
   name: string;
@@ -45,18 +44,5 @@ export interface ExtendedAgentInfo {
   username: string;
   domain: string;
   last_boot_time: string;
-}
-
-export interface AgentSession {
-  id: number;
-  agent_id: string;
-  session_id: string;
-  start_time: string;
-  end_time?: string | null;
-  ip_address: string;
-  user_agent: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 

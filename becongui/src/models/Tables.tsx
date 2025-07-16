@@ -1,5 +1,5 @@
 
-export interface Agent {
+export interface AgentTableEntry {
   id: string;
   hostname: string;
   ip: string;

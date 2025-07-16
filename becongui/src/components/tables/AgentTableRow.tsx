@@ -1,11 +1,11 @@
 import React from 'react';
-import { type Agent } from '../../models/Agent';
+import { type AgentTableEntry } from '../../models/Tables';
 
 interface AgentTableRowProps {
-  agent: Agent;
+  agent: AgentTableEntry;
   isSelected: boolean;
   onSelect: (id: string) => void;
-  onEdit: (agent: Agent) => void;
+  onEdit: (agent: AgentTableEntry) => void;
 }
 
 const AgentTableRow: React.FC<AgentTableRowProps> = ({ agent, isSelected, onSelect, onEdit }) => {

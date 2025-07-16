@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 // import { X } from 'lucide-react';
-import type { Agent } from '../models/Tables';
+import type { AgentTableEntry } from '../models/Tables';
 import AgentTableRow from './tables/AgentTableRow';
 import EditAgentSideBar from './modals/EditAgentSideBar';
 import InventoryControls from './InventoryControls';
@@ -8,7 +8,7 @@ import ErrorBanner from '../partials/ErrorBanner';
 import { getToken } from '../services/authService';
 
 // Mock data for operations not yet implemented
-const MOCK_AGENTS: Agent[] = [
+const MOCK_AGENTS: AgentTableEntry[] = [
   { id: 'agent-001', hostname: 'recon-host', ip: '192.168.1.1', os: 'Linux', protocol: 'HTTP', lastSeen: '2025-03-15T10:00:00Z', isActive: true },
   { id: 'agent-002', hostname: 'persist-host', ip: '192.168.1.2', os: 'Windows', protocol: 'HTTPS', lastSeen: '2025-04-01T14:30:00Z', isActive: true },
   { id: 'agent-003', hostname: 'data-exfil', ip: '192.168.1.3', os: 'Linux', protocol: 'TCP', lastSeen: '2024-11-20T09:15:00Z', isActive: false },
@@ -17,11 +17,11 @@ const MOCK_AGENTS: Agent[] = [
 ];
 
 const AgentInventory: React.FC = () => {
-  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agents, setAgents] = useState<AgentTableEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [editingAgent, setEditingAgent] = useState<AgentTableEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch agents from backend
@@ -37,7 +37,7 @@ const AgentInventory: React.FC = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch agents: ${response.statusText}`);
         }
-        const data: Agent[] = await response.json();
+        const data: AgentTableEntry[] = await response.json();
         setAgents(data);
         setError(null);
       } catch (err) {
@@ -82,7 +82,7 @@ const AgentInventory: React.FC = () => {
     }
   };
 
-  const handleEditClick = (agent: Agent) => {
+  const handleEditClick = (agent: AgentTableEntry) => {
     setEditingAgent(agent);
     setIsModalOpen(true);
   };
@@ -92,7 +92,7 @@ const AgentInventory: React.FC = () => {
     setEditingAgent(null);
   };
 
-  const handleSaveChanges = (updatedAgent: Agent) => {
+  const handleSaveChanges = (updatedAgent: AgentTableEntry) => {
     // Mock implementation
     console.log('Saving:', updatedAgent);
     setAgents(prev =>
