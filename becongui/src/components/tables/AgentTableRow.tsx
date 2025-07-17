@@ -52,7 +52,7 @@ const AgentTableRow: React.FC<AgentTableRowProps> = ({ agent, isSelected, onSele
           onClick={() => onEdit(agent)}
           className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
         >
-          Edit Agent
+          Interact
         </button>
       </td>
     </tr>

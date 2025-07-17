@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { type Agent, type AgentSession } from '../../models/Agent.tsx';
-import Modal from './Modal';
+import { type AgentTableEntry } from '../../models/Tables.tsx';
+import SidebarModal from './SideBarModal.tsx'
 
-interface EditAgentSideBarProps {
+interface InteractAgentSideBarProps {
   isOpen: boolean;
   onClose: () => void;
   agent: Agent | null;
   onSave: (agent: Agent) => void;
 }
 
-const EditAgentSideBar: React.FC<EditAgentSideBarProps> = ({ isOpen, onClose, agent, onSave }) => {
-  const [formData, setFormData] = useState<Agent>({
+const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({ isOpen, onClose, agent, onSave }) => {
+  const [formData, setFormData] = useState<AgentTableEntry>({
     id: '',
     hostname: '',
     ip: '',
@@ -25,7 +26,7 @@ const EditAgentSideBar: React.FC<EditAgentSideBarProps> = ({ isOpen, onClose, ag
   useEffect(() => {
     if (agent) {
       setFormData(agent);
-      setSessions(agent.sessions || []);
+      // setSessions(agent.sessions || []);
     } else {
       setFormData({
         id: '',
@@ -50,14 +51,36 @@ const EditAgentSideBar: React.FC<EditAgentSideBarProps> = ({ isOpen, onClose, ag
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (agent) {
-      onSave({ ...formData, id: agent.id, lastSeen: new Date().toISOString() });
-    }
+    // if (agent) {
+    //   onSave({ ...formData, id: agent.id, lastSeen: new Date().toISOString() });
+    // }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={agent ? 'Edit Agent' : 'Create Agent'}>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <SidebarModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={agent ? 'Edit Agent' : 'Create Agent'}
+      footer={
+        <div className="flex items-center space-x-3">
+          <button
+            type="submit"
+            form="edit-agent-form"
+            className="w-full bg-blue-600 text-white py-2.5 px-5 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium text-sm text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          >
+            Save Changes
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium text-sm text-center dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
+      }
+    >
+      <form id="edit-agent-form" onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <div>
             <label htmlFor="hostname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -168,24 +191,9 @@ const EditAgentSideBar: React.FC<EditAgentSideBarProps> = ({ isOpen, onClose, ag
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-3 pt-4">
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2.5 px-5 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium text-sm text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-          >
-            Save Changes
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full bg-gray-200 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-300 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium text-sm text-center dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:focus:ring-gray-600"
-          >
-            Cancel
-          </button>
-        </div>
       </form>
-    </Modal>
+    </SidebarModal>
   );
 };
 
-export default EditAgentSideBar;
+export default InteractionAgentSideBar;

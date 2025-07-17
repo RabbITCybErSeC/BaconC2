@@ -11,7 +11,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
 
       {/* Protected routes under DashboardLayout */}
-      <Route element={<ProtectedRoute />}>
+      {/* <Route element={<ProtectedRoute />}> */}
         <Route path="/" element={<DashboardLayout />}>
           {/* Redirect base path "/" to "/playbooks" */}
           <Route index element={<Navigate to="/playbooks" replace />} />
@@ -22,7 +22,7 @@ function App() {
           {/* Catch-all for unknown routes within the layout, redirects to playbooks */}
           <Route path="*" element={<Navigate to="/playbooks" replace />} />
         </Route>
-      </Route>
+      {/* </Route> */}
     </Routes >
   );
 }
