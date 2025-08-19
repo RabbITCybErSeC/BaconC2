@@ -92,14 +92,14 @@ const AgentInventory: React.FC = () => {
     setEditingAgent(null);
   };
 
-  const handleSaveChanges = (updatedAgent: AgentTableEntry) => {
-    // Mock implementation
-    console.log('Saving:', updatedAgent);
-    setAgents(prev =>
-      prev.map(agent => (agent.id === updatedAgent.id ? { ...agent, ...updatedAgent, lastSeen: new Date().toISOString() } : agent))
-    );
-    handleCloseModal();
-  };
+  // const handleSaveChanges = (updatedAgent: AgentTableEntry) => {
+  //   // Mock implementation
+  //   console.log('Saving:', updatedAgent);
+  //   setAgents(prev =>
+  //     prev.map(agent => (agent.id === updatedAgent.id ? { ...agent, ...updatedAgent, lastSeen: new Date().toISOString() } : agent))
+  //   );
+  //   handleCloseModal();
+  // };
 
   const handleDeleteSelected = () => {
     // Mock implementation
@@ -189,7 +189,7 @@ const AgentInventory: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         agent={editingAgent}
-        onSave={handleSaveChanges}
+        // onSave={handleSaveChanges}
       />
     </div>
   );

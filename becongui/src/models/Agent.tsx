@@ -6,7 +6,7 @@ export interface Agent {
   protocol: string;
   isActive: boolean;
   lastSeen: string;
-  extended_info: string;
+  // extended_info: string;
 }
 
 export interface AgentSession {

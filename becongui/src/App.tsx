@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import AgentInventoryPage from './pages/AgentInventoryPage.tsx';
-import ProtectedRoute from './services/routedProtector.tsx';
+/* import ProtectedRoute from './services/routedProtector.tsx'; */
 
 function App() {
   return (
