@@ -11,7 +11,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
       tailwindcss(),
     ],
     define: {
-      'process.env.SOARCA_URI': JSON.stringify(env.SOARCA_URI),
+      'process.env.BECON_URI': JSON.stringify(env.BECON_URI),
     },
     server: {
       port: 5173,

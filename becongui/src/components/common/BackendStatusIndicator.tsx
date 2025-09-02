@@ -4,18 +4,18 @@ type Status = 'checking' | 'ok' | 'error';
 
 const BackendStatusIndicator: React.FC = () => {
   const [status, setStatus] = useState<Status>('checking');
-  const soarcaUri = process.env.SOARCA_URI;
+  const beconUri = process.env.BECON_URI;
 
   useEffect(() => {
     const checkStatus = async () => {
-      if (!soarcaUri) {
-        console.error("SOARCA_URI environment variable is not defined.");
+      if (!beconUri) {
+        console.error("BECON_URI environment variable is not defined.");
         setStatus('error');
         return;
       }
 
       try {
-        const response = await fetch(`${soarcaUri}/status/ping`);
+        const response = await fetch(`${beconUri}/status/ping`);
         if (response.ok) {
           const text = await response.text();
           setStatus(text.trim() === 'pong' ? 'ok' : 'error');
@@ -32,7 +32,7 @@ const BackendStatusIndicator: React.FC = () => {
     const intervalId = setInterval(checkStatus, 30000);
 
     return () => clearInterval(intervalId);
-  }, [soarcaUri]);
+  }, [beconUri]);
 
   const renderIndicator = () => {
     switch (status) {

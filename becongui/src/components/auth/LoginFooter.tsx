@@ -30,7 +30,7 @@ const LoginFooter: React.FC = () => {
           <div className="text-center sm:text-left whitespace-nowrap">
             <button onClick={handleBackToSite} className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-slate-700 focus:outline-none focus:bg-gray-300 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset">
               <ArrowLeft className="w-4 h-4 inline-block align-text-top" />
-              <span className="inline-block ml-1">Back to SOARCA.com</span>
+              <span className="inline-block ml-1">Back to BeconC@.com</span>
             </button>
           </div>
         </div>

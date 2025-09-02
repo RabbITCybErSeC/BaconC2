@@ -4,7 +4,7 @@ import LoginForm from '../components/auth/LoginForm';
 import LoginFooter from '../components/auth/LoginFooter';
 
 const homeLink = "/";
-const soarcaLogoUrlPath = "/assets/logos/baconc2.png";
+const beconLogoUrlPath = "/assets/logos/baconc2.png";
 
 const LoginPage: React.FC = () => {
   const [errors, setErrors] = useState<Error[]>([]);
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
           <div className="px-5 pt-7">
             <div className="flex justify-center mb-5">
               <a href={homeLink}>
-                <img src={soarcaLogoUrlPath} alt="SOARCA Logo" className="w-30 h-auto" />
+                <img src={beconLogoUrlPath} alt="BeconC2 Logo" className="w-30 h-auto" />
               </a>
             </div>
             <AuthErrorDisplay errors={errors} />
