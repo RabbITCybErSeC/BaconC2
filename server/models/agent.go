@@ -8,7 +8,7 @@ import (
 )
 
 type AgentCommand struct {
-	ID        uint           `json:"id" gorm:"primaryKey"`
+	ID        string         `json:"id" gorm:"primaryKey"`
 	AgentID   string         `json:"agent_id" gorm:"index"`
 	Command   models.Command `gorm:"embedded"`
 	CreatedAt time.Time      `json:"created_at"`

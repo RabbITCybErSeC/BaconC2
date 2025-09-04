@@ -24,7 +24,7 @@ const SidebarModal: React.FC<SidebarModalProps> = ({
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Sidebar panel */}
       <div
-        className={`relative w-full md:w-2/3 max-w-4xl bg-white dark:bg-gray-800 shadow-xl h-full animate-slide-in-right ${className}`}
+        className={`relative w-full md:w-2/3 max-w-4xl border-l border-gray-200 bg-white dark:bg-gray-800 shadow-xl h-full animate-slide-in-right ${className}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">

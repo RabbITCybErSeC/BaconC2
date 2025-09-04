@@ -9,6 +9,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // AgentHandler handles agent-related operations
@@ -127,9 +128,13 @@ func (h *AgentHandler) handleCommandResult(c *gin.Context) {
 
 // handleAddCommand handles adding a new command for an agent
 func (h *AgentHandler) handleAddCommand(c *gin.Context) {
-	var cmd models.Command
-	if err := c.ShouldBindJSON(&cmd); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var rawCmd models.RawCommand
+	if err := c.ShouldBindJSON(&rawCmd); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
+		return
+	}
+	if rawCmd.Command == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Command field is required and cannot be empty"})
 		return
 	}
 
@@ -145,10 +150,13 @@ func (h *AgentHandler) handleAddCommand(c *gin.Context) {
 		return
 	}
 
+	commandID := uuid.New().String()
+	command := models.Command{ID: commandID, RawCommand: rawCmd, Status: models.StatusPending}
+
 	agentCmd := local_models.AgentCommand{
 		AgentID: agentID,
-		Command: cmd,
-		ID:      uint(time.Now().UnixNano()),
+		Command: command,
+		ID:      commandID,
 	}
 
 	if err := h.agentRepository.AddCommand(&agentCmd); err != nil {
