@@ -8,11 +8,10 @@ import (
 )
 
 type AgentCommand struct {
-	ID        string         `json:"id" gorm:"primaryKey"`
-	AgentID   string         `json:"agent_id" gorm:"index"`
-	Command   models.Command `gorm:"embedded"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	AgentID        string `json:"agent_id" gorm:"index"`
+	models.Command `gorm:"embedded"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 type ServerAgentModel struct {

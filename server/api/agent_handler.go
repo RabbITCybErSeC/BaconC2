@@ -150,13 +150,15 @@ func (h *AgentHandler) handleAddCommand(c *gin.Context) {
 		return
 	}
 
-	commandID := uuid.New().String()
-	command := models.Command{ID: commandID, RawCommand: rawCmd, Status: models.StatusPending}
-
 	agentCmd := local_models.AgentCommand{
 		AgentID: agentID,
-		Command: command,
-		ID:      commandID,
+		Command: models.Command{
+			ID:      uuid.New().String(),
+			Command: rawCmd.Command,
+			Status:  models.StatusPending,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if err := h.agentRepository.AddCommand(&agentCmd); err != nil {
