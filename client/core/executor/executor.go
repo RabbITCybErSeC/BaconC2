@@ -58,16 +58,15 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 	err := execCmd.Run()
 	var output interface{}
 	if err != nil {
-		result.Status = "error"
+		result.Status = models.CommandStatusFailed
 		output = map[string]string{"error": stderr.String()}
 	} else {
-		result.Status = "success"
+		result.Status = models.CommandStatusCompleted
 		output = map[string]string{"output": stdout.String()}
 	}
 
 	result.Output = output
 
-	// Queue the result
 	if err := e.resultsQueue.Add(result); err != nil {
 		fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
 		result.Status = "error"
@@ -85,13 +84,13 @@ func (e *DefaultCommandExecutor) ProcessCommandQueue() {
 			continue
 		}
 
-		// Execute the command
 		result := e.Execute(cmd)
 
-		if result.Status == "error" {
-			fmt.Printf("Command %s failed: %s\n", cmd.ID, result.Output)
+		if result.Status != models.CommandStatusCompleted {
+			fmt.Printf("Command %s with: %s\n", cmd.ID, result.Output)
 		} else {
 			fmt.Printf("Command %s queued result\n", cmd.ID)
+			e.queue.RemoveFirst()
 		}
 
 		time.Sleep(100 * time.Millisecond) // Prevent tight loop
