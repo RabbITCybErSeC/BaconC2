@@ -28,7 +28,7 @@ func main() {
 	cmdQueue := queue.NewMemoryQueue[models.Command]()
 	resultQueue := queue.NewMemoryQueue[models.CommandResult]()
 
-	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID, cmdQueue)
+	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue)
 
 	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
 	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, &cfg)

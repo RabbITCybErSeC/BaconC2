@@ -16,12 +16,17 @@ func NewStreamingConfig(shellType ShellType, term string) *StreamingConfig {
 	}
 }
 
+type Capabilities struct {
+	SupportsStreaming bool
+	SupportsPush      bool
+	SupportsBeacon    bool
+}
+
 type ITransportProtocol interface {
 	Initialize() error
 	Register(agent models.Agent) error
 	Beacon() (models.Command, error)
-	BeaconWithResultRequest() (models.Command, bool, error)
-	SendResult(agentID string, result models.CommandResult) error
+	SendResults() error
 	Close() error
 }
 

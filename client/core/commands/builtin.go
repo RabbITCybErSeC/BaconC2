@@ -16,12 +16,19 @@ const (
 	shellSessionTimeout = 30 * time.Second
 )
 
+type BuiltInCommand string
+
+const (
+	SysInfoCommand    BuiltInCommand = "sys_info"
+	StartShellCommand BuiltInCommand = "start_shell"
+)
+
 func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport local_models.ITransportProtocol, streamingTransport local_models.IStreamingTransport) {
-	registry.RegisterHandler("sys_info", func(cmd models.Command) models.CommandResult {
+	registry.RegisterHandler(string(SysInfoCommand), func(cmd models.Command) models.CommandResult {
 		return getInfoHandler(cmd, resultsQueue)
 	})
 
-	registry.RegisterHandler("start_shell", func(cmd models.Command) models.CommandResult {
+	registry.RegisterHandler(string(StartShellCommand), func(cmd models.Command) models.CommandResult {
 		return startShellHandler(cmd, resultsQueue, streamingTransport)
 	})
 }

@@ -17,7 +17,7 @@ import (
 const (
 	registerAPIPath = "%s/api/agents/register"
 	beaconAPIPath   = "%s/api/agents/beacon?id=%s"
-	resultAPIPath   = "%s/api/agents/result?id=%s"
+	resultsAPIPath  = "%s/api/agents/results?id=%s"
 )
 
 type HTTPTransport struct {
@@ -25,15 +25,17 @@ type HTTPTransport struct {
 	agentID        string
 	httpClient     *http.Client
 	commandQueue   queue.ICommandQueue
+	resultQueue    queue.ICommandQueue
 	beaconInterval time.Duration
 }
 
-func NewHTTPTransport(serverURL, agentID string, commandQueue queue.ICommandQueue) local_models.ITransportProtocol {
+func NewHTTPTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.ICommandQueue) local_models.ITransportProtocol {
 	return &HTTPTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,
 		httpClient:     &http.Client{Timeout: 10 * time.Second},
 		commandQueue:   commandQueue,
+		resultQueue:    resultQueue,
 		beaconInterval: 10 * time.Second,
 	}
 }
@@ -110,22 +112,38 @@ func (t *HTTPTransport) BeaconWithResultRequest() (models.Command, bool, error) 
 	return response.Command, response.RequestResults, nil
 }
 
-func (t *HTTPTransport) SendResult(agentID string, result models.CommandResult) error {
-	jsonData, err := json.Marshal(result)
+func (t *HTTPTransport) SendResults() error {
+	results, err := t.resultQueue.List()
 	if err != nil {
-		return fmt.Errorf("failed to marshal result: %w", err)
+		return fmt.Errorf("failed to get results from queue: %w", err)
 	}
 
-	url := fmt.Sprintf(resultAPIPath, t.serverURL, agentID)
+	if len(results) == 0 {
+		return nil
+	}
+
+	jsonData, err := json.Marshal(results)
+	if err != nil {
+		return fmt.Errorf("failed to marshal results: %w", err)
+	}
+
+	url := fmt.Sprintf(resultsAPIPath, t.serverURL, t.agentID)
 	resp, err := t.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return fmt.Errorf("HTTP result send error: %w", err)
+		return fmt.Errorf("HTTP batch result send error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("result send failed with status %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("batch result send failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	for i := 0; i < len(results); i++ {
+		_, err := t.resultQueue.RemoveFirst()
+		if err != nil {
+			return fmt.Errorf("failed to clear result queue: %w", err)
+		}
 	}
 
 	return nil

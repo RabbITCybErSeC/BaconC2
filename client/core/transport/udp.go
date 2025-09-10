@@ -18,16 +18,18 @@ type UDPTransport struct {
 	agentID        string
 	conn           *net.UDPConn
 	commandQueue   queue.ICommandQueue
+	resultQueue    queue.ICommandQueue
 	beaconInterval time.Duration
 	mu             sync.Mutex
 }
 
-func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue) local_models.ITransportProtocol {
+func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.ICommandQueue) local_models.ITransportProtocol {
 	return &UDPTransport{
 		serverHost:     host,
 		serverPort:     port,
 		agentID:        agentID,
 		commandQueue:   commandQueue,
+		resultQueue:    resultQueue,
 		beaconInterval: 10 * time.Second,
 	}
 }
@@ -140,7 +142,16 @@ func (t *UDPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
 	return response.Command, response.RequestResults, nil
 }
 
-func (t *UDPTransport) SendResult(agentID string, result models.CommandResult) error {
+func (t *UDPTransport) SendResults() error {
+	results, err := t.resultQueue.List()
+	if err != nil {
+		return fmt.Errorf("failed to get results from queue: %w", err)
+	}
+
+	if len(results) == 0 {
+		return nil
+	}
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -148,7 +159,8 @@ func (t *UDPTransport) SendResult(agentID string, result models.CommandResult) e
 		return fmt.Errorf("UDP connection not initialized")
 	}
 
-	jsonData, err := json.Marshal(result)
+	//TODO: for now first entry needs to be fixed later
+	jsonData, err := json.Marshal(results[0])
 	if err != nil {
 		return fmt.Errorf("failed to marshal result: %w", err)
 	}

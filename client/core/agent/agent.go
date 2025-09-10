@@ -114,41 +114,27 @@ func (c *AgentClient) beacon() {
 	}
 
 	// Beacon to server and check if results are requested
-	cmd, requestResults, err := c.transport.BeaconWithResultRequest()
+	cmd, err := c.transport.Beacon()
 	if err != nil {
 		log.Printf("Beacon error: %v", err)
 		return
 	}
 
 	// Send queued results if requested
-	if requestResults {
-		for {
-			result, ok := c.resultsQueue.Get()
-			if !ok {
-				break
-			}
-			if err := c.transport.SendResult(c.agent.ID, result); err != nil {
-				log.Printf("Failed to send result for command %s: %v", result.ID, err)
-				// Re-queue the result on failure
-				if err := c.resultsQueue.Add(result); err != nil {
-					log.Printf("Error re-queuing result %s: %v", result.ID, err)
-				}
-			} else {
-				log.Printf("Sent result for command %s", result.ID)
-			}
-		}
+	if cmd.Command == commands.buil {
+
 	}
 
-	if cmd.ID != "" && cmd.Command != "" {
-		log.Printf("Received command %s: %s", cmd.ID, cmd.Command)
-		// Execute the command using the executor
-		result := c.commandExecutor.Execute(cmd)
-		if result.Status == "error" {
-			log.Printf("Command %s failed: %s", cmd.ID, result.Output)
-		} else {
-			log.Printf("Command %s queued result", cmd.ID)
-		}
-	}
+	// if cmd.ID != "" && cmd.Command != "" {
+	// 	log.Printf("Received command %s: %s", cmd.ID, cmd.Command)
+	// 	// Execute the command using the executor
+	// 	result := c.commandExecutor.Execute(cmd)
+	// 	if result.Status == "error" {
+	// 		log.Printf("Command %s failed: %s", cmd.ID, result.Output)
+	// 	} else {
+	// 		log.Printf("Command %s queued result", cmd.ID)
+	// 	}
+	// }
 }
 
 func getOutboundIP() string {

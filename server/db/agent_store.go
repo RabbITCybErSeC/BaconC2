@@ -28,9 +28,9 @@ type IAgentRepository interface {
 	GetAgentSessions(agentID string) ([]local_models.AgentSession, error)
 
 	AddCommand(command *local_models.AgentCommand) error
-	GetPendingCommands(agentID string) ([]local_models.AgentCommand, error)
+	GetCommandsByStatus(agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error)
 	GetCommands(agentID string, limit int) ([]local_models.AgentCommand, error)
-	UpdateCommandStatus(commandID string, status string) error
+	UpdateCommandStatus(commandID string, status models.CommandStatus) error
 }
 
 type AgentRepository struct {
@@ -176,15 +176,28 @@ func (s *AgentRepository) AddCommand(command *local_models.AgentCommand) error {
 	return s.db.Create(command).Error
 }
 
-func (s *AgentRepository) GetPendingCommands(agentID string) ([]local_models.AgentCommand, error) {
+func (s *AgentRepository) GetCommandsByStatus(agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error) {
 	var commands []local_models.AgentCommand
-	err := s.db.Where("agent_id = ? AND status = ?", agentID, "pending").
+	err := s.db.Where("agent_id = ? AND status = ?", agentID, status).
 		Order("created_at ASC").
 		Find(&commands).Error
 	if err != nil {
 		return nil, err
 	}
 	return commands, nil
+}
+
+func (s *AgentRepository) UpdateCommandStatus(commandID string, status models.CommandStatus) error {
+	result := s.db.Model(&local_models.AgentCommand{}).
+		Where("id = ?", commandID).
+		Update("status", status)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no command found with ID %s", commandID)
+	}
+	return nil
 }
 
 func (s *AgentRepository) GetCommands(agentID string, limit int) ([]local_models.AgentCommand, error) {
@@ -201,12 +214,6 @@ func (s *AgentRepository) GetCommands(agentID string, limit int) ([]local_models
 		return nil, err
 	}
 	return commands, nil
-}
-
-func (s *AgentRepository) UpdateCommandStatus(commandID string, status string) error {
-	return s.db.Model(&local_models.AgentCommand{}).
-		Where("id = ?", commandID).
-		Update("status", status).Error
 }
 
 // Utility methods
