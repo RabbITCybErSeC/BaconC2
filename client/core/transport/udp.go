@@ -18,12 +18,13 @@ type UDPTransport struct {
 	agentID        string
 	conn           *net.UDPConn
 	commandQueue   queue.ICommandQueue
-	resultQueue    queue.ICommandQueue
+	resultQueue    queue.IResultQueue
 	beaconInterval time.Duration
+	stopChan       chan struct{}
 	mu             sync.Mutex
 }
 
-func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.ICommandQueue) local_models.ITransportProtocol {
+func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue) local_models.ITransportProtocol {
 	return &UDPTransport{
 		serverHost:     host,
 		serverPort:     port,
@@ -31,6 +32,7 @@ func NewUDPTransport(host string, port int, agentID string, commandQueue queue.I
 		commandQueue:   commandQueue,
 		resultQueue:    resultQueue,
 		beaconInterval: 10 * time.Second,
+		stopChan:       make(chan struct{}),
 	}
 }
 
@@ -49,23 +51,18 @@ func (t *UDPTransport) Initialize(agent models.Agent) error {
 	t.conn = conn
 	t.mu.Unlock()
 
-	return nil
-}
-
-func (t *UDPTransport) Register(agent models.Agent) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	if t.conn == nil {
-		return fmt.Errorf("UDP connection not initialized")
-	}
-
 	jsonData, err := json.Marshal(agent)
 	if err != nil {
 		return fmt.Errorf("failed to marshal agent: %w", err)
 	}
 
+	t.mu.Lock()
+	if t.conn == nil {
+		t.mu.Unlock()
+		return fmt.Errorf("UDP connection not initialized")
+	}
 	_, err = t.conn.Write(jsonData)
+	t.mu.Unlock()
 	if err != nil {
 		return fmt.Errorf("UDP registration error: %w", err)
 	}
@@ -73,19 +70,17 @@ func (t *UDPTransport) Register(agent models.Agent) error {
 	return nil
 }
 
-func (t *UDPTransport) Beacon() (models.Command, error) {
-	cmd, _, err := t.BeaconWithResultRequest()
-	return cmd, err
+func (t *UDPTransport) RunProtocol() error {
+	go t.beaconLoop()
+	return nil
 }
 
-func (t *UDPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
+func (t *UDPTransport) sendBeacon() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	var emptyCmd models.Command
-
 	if t.conn == nil {
-		return emptyCmd, false, fmt.Errorf("UDP connection not initialized")
+		return fmt.Errorf("UDP connection not initialized")
 	}
 
 	// Send beacon message
@@ -94,12 +89,12 @@ func (t *UDPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
 	}{ID: t.agentID}
 	jsonData, err := json.Marshal(beacon)
 	if err != nil {
-		return emptyCmd, false, fmt.Errorf("failed to marshal beacon: %w", err)
+		return fmt.Errorf("failed to marshal beacon: %w", err)
 	}
 
 	_, err = t.conn.Write(jsonData)
 	if err != nil {
-		return emptyCmd, false, fmt.Errorf("UDP beacon error: %w", err)
+		return fmt.Errorf("UDP beacon error: %w", err)
 	}
 
 	// Set read deadline for response
@@ -108,9 +103,9 @@ func (t *UDPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
 	n, _, err := t.conn.ReadFromUDP(buffer)
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			return emptyCmd, false, nil // Timeout means no command
+			return nil
 		}
-		return emptyCmd, false, fmt.Errorf("UDP read error: %w", err)
+		return fmt.Errorf("UDP read error: %w", err)
 	}
 
 	// Parse server response
@@ -121,7 +116,7 @@ func (t *UDPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
 		RequestResults bool           `json:"requestResults"`
 	}
 	if err := json.Unmarshal(buffer[:n], &response); err != nil {
-		return emptyCmd, false, fmt.Errorf("failed to unmarshal response: %w", err)
+		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	// Update beacon interval if provided
@@ -131,15 +126,15 @@ func (t *UDPTransport) BeaconWithResultRequest() (models.Command, bool, error) {
 
 	// If only "status" is returned (e.g., "acknowledged"), return empty command
 	if response.Command.ID == "" && response.Status == "acknowledged" {
-		return emptyCmd, response.RequestResults, nil
+		return nil
 	}
 
 	// Queue the command
 	if err := t.commandQueue.Add(response.Command); err != nil {
-		return emptyCmd, response.RequestResults, fmt.Errorf("failed to queue command: %w", err)
+		return fmt.Errorf("failed to queue command: %w", err)
 	}
 
-	return response.Command, response.RequestResults, nil
+	return nil
 }
 
 func (t *UDPTransport) SendResults() error {
@@ -159,21 +154,48 @@ func (t *UDPTransport) SendResults() error {
 		return fmt.Errorf("UDP connection not initialized")
 	}
 
-	//TODO: for now first entry needs to be fixed later
-	jsonData, err := json.Marshal(results[0])
-	if err != nil {
-		return fmt.Errorf("failed to marshal result: %w", err)
+	for _, result := range results {
+		jsonData, err := json.Marshal(result)
+		if err != nil {
+			return fmt.Errorf("failed to marshal result: %w", err)
+		}
+
+		_, err = t.conn.Write(jsonData)
+		if err != nil {
+			return fmt.Errorf("UDP result send error: %w", err)
+		}
 	}
 
-	_, err = t.conn.Write(jsonData)
-	if err != nil {
-		return fmt.Errorf("UDP result send error: %w", err)
+	// Clear the queue after successful send
+	for i := 0; i < len(results); i++ {
+		_, err := t.resultQueue.RemoveFirst()
+		if err != nil {
+			return fmt.Errorf("failed to clear result queue: %w", err)
+		}
 	}
 
 	return nil
 }
 
+func (t *UDPTransport) beaconLoop() {
+	ticker := time.NewTicker(t.beaconInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-t.stopChan:
+			return
+		case <-ticker.C:
+			if err := t.sendBeacon(); err != nil {
+				// Log error but continue
+				fmt.Printf("Beacon send failed: %v\n", err)
+			}
+		}
+	}
+}
+
 func (t *UDPTransport) Close() error {
+	close(t.stopChan)
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -181,4 +203,8 @@ func (t *UDPTransport) Close() error {
 		return t.conn.Close()
 	}
 	return nil
+}
+
+func (t *UDPTransport) GetBeaconInterval() time.Duration {
+	return t.beaconInterval
 }

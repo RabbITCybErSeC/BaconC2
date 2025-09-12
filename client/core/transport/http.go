@@ -93,6 +93,10 @@ func (t *HTTPTransport) sendBeacon() error {
 		t.beaconInterval = time.Duration(response.NextBeacon) * time.Second
 	}
 
+	if response.Status != models.CommandStatusPending {
+		return nil
+	}
+	fmt.Println(response)
 	if err := t.commandQueue.Add(response.Command); err != nil {
 		return fmt.Errorf("failed to queue command: %w", err)
 	}

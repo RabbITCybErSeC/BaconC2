@@ -80,10 +80,10 @@ func (e *DefaultCommandExecutor) ProcessCommandQueue() {
 	for {
 		cmd, ok := e.queue.Get()
 		if !ok {
-			time.Sleep(1 * time.Second)
+			time.Sleep(10 * time.Millisecond)
 			continue
 		}
-
+		fmt.Println(cmd)
 		result := e.Execute(cmd)
 
 		if result.Status != models.CommandStatusCompleted {

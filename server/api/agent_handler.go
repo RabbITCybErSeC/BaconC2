@@ -79,7 +79,7 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 	if len(commands) > 0 {
 		cmd := commands[0]
 
-		if err := h.agentRepository.UpdateCommandStatus(cmd.ID, models.StatusSend); err != nil {
+		if err := h.agentRepository.UpdateCommandStatus(cmd.ID, models.CommandStatusSentToClient); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

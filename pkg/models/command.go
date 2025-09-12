@@ -3,14 +3,16 @@ package models
 type CommandStatus string
 
 const (
-	CommandStatusPending   CommandStatus = "pending"
-	CommandStatusRunning   CommandStatus = "running"
-	CommandStatusCompleted CommandStatus = "completed"
-	CommandStatusFailed    CommandStatus = "failed"
-	CommandStatusCancelled CommandStatus = "cancelled"
-	CommandStatusTimeout   CommandStatus = "timeout"
-	CommandStatusSent      CommandStatus = "sent"
-	CommandStatusRecevied  CommandStatus = "received"
+	CommandStatusPending            CommandStatus = "pending"
+	CommandStatusRunning            CommandStatus = "running"
+	CommandStatusCompleted          CommandStatus = "completed"
+	CommandStatusFailed             CommandStatus = "failed"
+	CommandStatusCancelled          CommandStatus = "cancelled"
+	CommandStatusTimeout            CommandStatus = "timeout"
+	CommandStatusSentToClient       CommandStatus = "c_sent"
+	CommandStatusSentToServer       CommandStatus = "s_sent"
+	CommandStatusReceivedFromClient CommandStatus = "c_received"
+	CommandStatusReceivedFromServer CommandStatus = "s_received"
 )
 
 type WebSocketMessage struct {
