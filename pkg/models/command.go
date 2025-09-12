@@ -9,6 +9,8 @@ const (
 	CommandStatusFailed    CommandStatus = "failed"
 	CommandStatusCancelled CommandStatus = "cancelled"
 	CommandStatusTimeout   CommandStatus = "timeout"
+	CommandStatusSent      CommandStatus = "sent"
+	CommandStatusRecevied  CommandStatus = "received"
 )
 
 type WebSocketMessage struct {

