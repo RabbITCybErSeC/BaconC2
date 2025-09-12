@@ -56,7 +56,6 @@ func (h *AgentHandler) handleRegister(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": "registered"})
 }
 
-// handleBeacon handles agent beaconing
 func (h *AgentHandler) handleBeacon(c *gin.Context) {
 	agentID := c.Query("id")
 	if agentID == "" {
@@ -67,6 +66,12 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 	_, err := h.agentRepository.Get(agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+		return
+	}
+
+	// Update agent's last seen timestamp
+	if err := h.agentRepository.UpdateLastSeen(agentID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update last seen: " + err.Error()})
 		return
 	}
 

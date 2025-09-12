@@ -20,6 +20,8 @@ type IAgentRepository interface {
 	GetActiveAgents() ([]local_models.ServerAgentModel, error)
 
 	UpdateExtendedInfo(agentID string, info *models.ExtendedAgentInfo) error
+	UpdateLastSeen(agentID string) error
+
 	GetExtendedInfo(agentID string) (*models.ExtendedAgentInfo, error)
 
 	CreateSession(session *local_models.AgentSession) error
@@ -125,6 +127,12 @@ func (s *AgentRepository) GetActiveAgents() ([]local_models.ServerAgentModel, er
 func (s *AgentRepository) UpdateExtendedInfo(agentID string, info *models.ExtendedAgentInfo) error {
 	info.AgentID = agentID
 	return s.db.Save(info).Error
+}
+
+func (s *AgentRepository) UpdateLastSeen(agentID string) error {
+	return s.db.Model(&local_models.ServerAgentModel{}).
+		Where("id = ?", agentID).
+		Update("last_seen", time.Now()).Error
 }
 
 func (s *AgentRepository) GetExtendedInfo(agentID string) (*models.ExtendedAgentInfo, error) {
