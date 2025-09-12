@@ -200,7 +200,7 @@ func (t *HTTPTransport) beaconLoop() {
 		case <-t.stopChan:
 			return
 		case <-ticker.C:
-			t.beacon()
+			t.sendBeacon()
 		}
 	}
 }
