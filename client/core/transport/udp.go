@@ -34,7 +34,7 @@ func NewUDPTransport(host string, port int, agentID string, commandQueue queue.I
 	}
 }
 
-func (t *UDPTransport) Initialize() error {
+func (t *UDPTransport) Initialize(agent models.Agent) error {
 	serverAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", t.serverHost, t.serverPort))
 	if err != nil {
 		return fmt.Errorf("failed to resolve UDP address: %w", err)

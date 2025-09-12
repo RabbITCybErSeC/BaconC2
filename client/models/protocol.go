@@ -23,10 +23,11 @@ type Capabilities struct {
 }
 
 type ITransportProtocol interface {
-	Initialize() error
-	Register(agent models.Agent) error
-	Beacon() (models.Command, error)
-	SendResults() error
+	Initialize(agent models.Agent) error
+	RunProtocol() error
+	// Beacon() (models.Command, error)
+	// BeaconWithResultRequest() (models.Command, bool, error)
+	// SendResults() error
 	Close() error
 }
 

@@ -1,9 +1,7 @@
 package agent
 
 import (
-	"fmt"
 	"log"
-	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
@@ -19,7 +17,6 @@ type AgentClient struct {
 	resultsQueue    queue.IResultQueue
 	agent           models.Agent
 	isRunning       bool
-	stopChan        chan struct{}
 }
 
 func NewAgentClient(cfg config.AgentConfig, tr local_models.ITransportProtocol, commandExecutor models.ICommandExecutor, commandQueue queue.ICommandQueue, resultsQueue queue.IResultQueue) *AgentClient {
@@ -28,7 +25,6 @@ func NewAgentClient(cfg config.AgentConfig, tr local_models.ITransportProtocol, 
 		transport:       tr,
 		commandExecutor: commandExecutor,
 		resultsQueue:    resultsQueue,
-		stopChan:        make(chan struct{}),
 	}
 }
 
@@ -46,11 +42,7 @@ func (c *AgentClient) Initialize() error {
 		Protocol: sysInfo.Protocol,
 	}
 
-	if err := c.transport.Initialize(); err != nil {
-		return err
-	}
-
-	if err := c.transport.Register(c.agent); err != nil {
+	if err := c.transport.Initialize(c.agent); err != nil {
 		return err
 	}
 
@@ -64,7 +56,7 @@ func (c *AgentClient) Start() error {
 
 	c.isRunning = true
 	log.Printf("Agent %s started, beaconing every %s", c.agent.ID, c.config.BeaconInterval)
-	go c.beaconLoop()
+	go c.transport.RunProtocol()
 
 	return nil
 }
@@ -75,66 +67,10 @@ func (c *AgentClient) Stop() {
 	}
 
 	c.isRunning = false
-	close(c.stopChan)
 
 	if err := c.transport.Close(); err != nil {
 		log.Printf("Error closing transport: %v", err)
 	}
-}
-
-func (c *AgentClient) beaconLoop() {
-	ticker := time.NewTicker(c.config.BeaconInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-c.stopChan:
-			return
-		case <-ticker.C:
-			c.beacon()
-		}
-	}
-}
-
-func (c *AgentClient) beacon() {
-	// Gather minimal system info for every beacon
-	sysInfo, err := sysinfo.GatherMinimalInfo(c.config.Protocol)
-	if err != nil {
-		log.Printf("Failed to gather minimal system info: %v", err)
-	} else {
-		result := models.CommandResult{
-			ID:     fmt.Sprintf("sysinfo-%d", time.Now().UnixNano()),
-			Status: "success",
-			Output: fmt.Sprintf("Hostname: %s, IP: %s, OS: %s, Protocol: %s",
-				sysInfo.Hostname, sysInfo.IP, sysInfo.OS, sysInfo.Protocol),
-		}
-		if err := c.resultsQueue.Add(result); err != nil {
-			log.Printf("Failed to queue minimal system info: %v", err)
-		}
-	}
-
-	// Beacon to server and check if results are requested
-	cmd, err := c.transport.Beacon()
-	if err != nil {
-		log.Printf("Beacon error: %v", err)
-		return
-	}
-
-	// Send queued results if requested
-	if cmd.Command == commands.buil {
-
-	}
-
-	// if cmd.ID != "" && cmd.Command != "" {
-	// 	log.Printf("Received command %s: %s", cmd.ID, cmd.Command)
-	// 	// Execute the command using the executor
-	// 	result := c.commandExecutor.Execute(cmd)
-	// 	if result.Status == "error" {
-	// 		log.Printf("Command %s failed: %s", cmd.ID, result.Output)
-	// 	} else {
-	// 		log.Printf("Command %s queued result", cmd.ID)
-	// 	}
-	// }
 }
 
 func getOutboundIP() string {
