@@ -83,7 +83,6 @@ func (e *DefaultCommandExecutor) ProcessCommandQueue() {
 			time.Sleep(10 * time.Millisecond)
 			continue
 		}
-		fmt.Println(cmd)
 		result := e.Execute(cmd)
 
 		if result.Status != models.CommandStatusCompleted {

@@ -70,7 +70,7 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 		return
 	}
 
-	commands, err := h.agentRepository.GetCommandsByStatus(agentID, models.StatusPending)
+	commands, err := h.agentRepository.GetCommandsByStatus(agentID, models.CommandStatusPending)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -80,20 +80,26 @@ func (h *AgentHandler) handleBeacon(c *gin.Context) {
 		cmd := commands[0]
 
 		if err := h.agentRepository.UpdateCommandStatus(cmd.ID, models.CommandStatusSentToClient); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, models.HttpBeaconResponse{
+				Status:         models.CommandStatusFailed,
+				RequestResults: false,
+			})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"command":    cmd.Command,
-			"nextBeacon": 10,
+		c.JSON(http.StatusOK, models.HttpBeaconResponse{
+			Command:        cmd.Command,
+			Status:         models.CommandStatusSentToClient,
+			NextBeacon:     10,
+			RequestResults: false,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":     "acknowledged",
-		"nextBeacon": 10,
+	c.JSON(http.StatusOK, models.HttpBeaconResponse{
+		Status:         models.CommandStatusAck,
+		NextBeacon:     10,
+		RequestResults: false,
 	})
 }
 
@@ -156,7 +162,7 @@ func (h *AgentHandler) handleAddCommand(c *gin.Context) {
 		Command: models.Command{
 			ID:      uuid.New().String(),
 			Command: rawCmd.Command,
-			Status:  models.StatusPending,
+			Status:  models.CommandStatusPending,
 		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),

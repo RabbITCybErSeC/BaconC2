@@ -9,6 +9,7 @@ const (
 	CommandStatusFailed             CommandStatus = "failed"
 	CommandStatusCancelled          CommandStatus = "cancelled"
 	CommandStatusTimeout            CommandStatus = "timeout"
+	CommandStatusAck                CommandStatus = "ack"
 	CommandStatusSentToClient       CommandStatus = "c_sent"
 	CommandStatusSentToServer       CommandStatus = "s_sent"
 	CommandStatusReceivedFromClient CommandStatus = "c_received"
@@ -19,6 +20,10 @@ type WebSocketMessage struct {
 	Type string `json:"type"` // "input", "output", "error", "control"
 	Data string `json:"data"`
 	ID   string `json:"id,omitempty"`
+}
+
+type RawCommand struct {
+	Command string `json:"command"`
 }
 
 type Command struct {
