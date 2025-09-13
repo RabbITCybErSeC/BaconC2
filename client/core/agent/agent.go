@@ -8,6 +8,7 @@ import (
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
 )
 
 type AgentClient struct {
@@ -17,9 +18,10 @@ type AgentClient struct {
 	resultsQueue    queue.IResultQueue
 	agent           models.Agent
 	isRunning       bool
+	chainEncoders   models.chainEncoders
 }
 
-func NewAgentClient(cfg config.AgentConfig, tr local_models.ITransportProtocol, commandExecutor models.ICommandExecutor, commandQueue queue.ICommandQueue, resultsQueue queue.IResultQueue) *AgentClient {
+func NewAgentClient(cfg config.AgentConfig, tr local_models.ITransportProtocol, commandExecutor models.ICommandExecutor, commandQueue queue.ICommandQueue, resultsQueue queue.IResultQueue, encoderChains encoders.ChainEncoder) *AgentClient {
 	return &AgentClient{
 		config:          cfg,
 		transport:       tr,
