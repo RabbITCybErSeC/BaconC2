@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/RabbITCybErSeC/BaconC2/pkg/middleware"
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 
@@ -17,7 +18,7 @@ import (
 func RegisterAgentRoutes(agentHandler *AgentHandler) {
 	agentAPI := agentHandler.engine.Group("/api/agents")
 	{
-		agentAPI.Use(CorsMiddleware())
+		agentAPI.Use(middleware.CorsMiddleware())
 		agentAPI.POST("/register", agentHandler.handleRegister)
 		agentAPI.POST("/beacon", agentHandler.handleBeacon)
 		agentAPI.POST("/result", agentHandler.handleCommandResult)
@@ -28,7 +29,7 @@ func RegisterAgentRoutes(agentHandler *AgentHandler) {
 func RegisterFrontendRoutes(frontendHandler *FrontendHandler, config *config.ServerConfig) {
 	frontendAPI := frontendHandler.engine.Group("/api/frontend")
 	{
-		frontendAPI.Use(CorsMiddleware())
+		frontendAPI.Use(middleware.CorsMiddleware())
 		frontendAPI.Use(JWTMiddleware(config))
 		frontendAPI.GET("/agents", frontendHandler.handleListAgents)
 	}
@@ -38,7 +39,7 @@ func RegisterAuthRoutes(engine *gin.Engine, config *config.ServerConfig, userRep
 	authHandler := NewAuthHandler(config, userRepo)
 	authAPI := engine.Group("/api/auth")
 	{
-		authAPI.Use(CorsMiddleware())
+		authAPI.Use(middleware.CorsMiddleware())
 		authAPI.POST("/login", authHandler.handleLogin)
 	}
 }

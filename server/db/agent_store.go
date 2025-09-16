@@ -129,12 +129,6 @@ func (s *AgentRepository) UpdateExtendedInfo(agentID string, info *models.Extend
 	return s.db.Save(info).Error
 }
 
-func (s *AgentRepository) UpdateLastSeen(agentID string) error {
-	return s.db.Model(&local_models.ServerAgentModel{}).
-		Where("id = ?", agentID).
-		Update("last_seen", time.Now()).Error
-}
-
 func (s *AgentRepository) GetExtendedInfo(agentID string) (*models.ExtendedAgentInfo, error) {
 	var info models.ExtendedAgentInfo
 	err := s.db.Where("agent_id = ?", agentID).First(&info).Error

@@ -1,5 +1,10 @@
 package encoders
 
+type IChainEncoder interface {
+	Encode(data []byte) ([]byte, error)
+	Decode(data []byte) ([]byte, error)
+}
+
 type ChainEncoder struct {
 	encoders []Encoder
 }
@@ -20,6 +25,7 @@ func (ce *ChainEncoder) Encode(data []byte) ([]byte, error) {
 		}
 	}
 	return result, nil
+
 }
 
 func (ce *ChainEncoder) Decode(data []byte) ([]byte, error) {
