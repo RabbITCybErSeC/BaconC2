@@ -12,7 +12,6 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
 
-	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
 
@@ -37,7 +36,7 @@ type HTTPClientTransport struct {
 	encoderChain   encoders.IChainEncoder
 }
 
-func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) local_models.ITransportProtocol {
+func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) *HTTPClientTransport {
 	return &HTTPClientTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,
@@ -70,7 +69,7 @@ func (t *HTTPClientTransport) Initialize(agent models.Agent) error {
 	return nil
 }
 
-func (t *HTTPClientTransport) RunProtocol() error {
+func (t *HTTPClientTransport) Start() error {
 	t.beaconLoop()
 	return nil
 }
@@ -97,7 +96,7 @@ func (t *HTTPClientTransport) sendBeacon() error {
 	if response.NextBeacon > 0 {
 		t.beaconInterval = time.Duration(response.NextBeacon) * time.Second
 	}
-	fmt.Println(response)
+
 	if response.Status != models.CommandStatusSentToClient {
 		return nil
 	}
@@ -162,7 +161,7 @@ func (t *HTTPClientTransport) beaconLoop() {
 	}
 }
 
-func (t *HTTPClientTransport) Close() error {
+func (t *HTTPClientTransport) Stop() error {
 	t.httpClient.CloseIdleConnections()
 	close(t.stopChan)
 	return nil

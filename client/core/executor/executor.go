@@ -9,6 +9,7 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/commands"
+	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
@@ -17,7 +18,7 @@ import (
 type DefaultCommandExecutor struct {
 	queue           queue.GenericQueue[models.Command]
 	resultsQueue    queue.GenericQueue[models.CommandResult]
-	transport       local_models.ITransportProtocol
+	transport       transport.ITransportProtocol
 	config          *config.AgentConfig
 	commandRegistry *commands.CommandHandlerRegistry
 }

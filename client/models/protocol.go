@@ -22,15 +22,6 @@ type Capabilities struct {
 	SupportsBeacon    bool
 }
 
-type ITransportProtocol interface {
-	Initialize(agent models.Agent) error
-	RunProtocol() error
-	// Beacon() (models.Command, error)
-	// BeaconWithResultRequest() (models.Command, bool, error)
-	// SendResults() error
-	Close() error
-}
-
 type IStreamingTransport interface {
 	StartStreamingSession(sessionType string, config *StreamingConfig, resultChan chan<- models.CommandResult) error
 	CloseSession(sessionID string) error

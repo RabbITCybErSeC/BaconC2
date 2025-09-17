@@ -9,10 +9,8 @@ type ChainEncoder struct {
 	encoders []Encoder
 }
 
-func NewChainEncoder(encoders ...Encoder) *ChainEncoder {
-	return &ChainEncoder{
-		encoders: encoders,
-	}
+func NewChainEncoder(encoders []Encoder) *ChainEncoder {
+	return &ChainEncoder{encoders: encoders}
 }
 
 func (ce *ChainEncoder) Encode(data []byte) ([]byte, error) {

