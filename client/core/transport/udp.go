@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
@@ -24,7 +23,7 @@ type UDPTransport struct {
 	mu             sync.Mutex
 }
 
-func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue) local_models.ITransportProtocol {
+func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue) ITransportProtocol {
 	return &UDPTransport{
 		serverHost:     host,
 		serverPort:     port,

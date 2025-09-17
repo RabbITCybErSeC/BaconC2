@@ -32,22 +32,21 @@ func main() {
 	server := service.NewServer(agentRepo, commandQueue, cfg)
 
 	if cfg.AgentHTTPConfig.Enabled {
-		fmt.Println("enabled")
 		agentAPIEngine := gin.Default()
-		agentAPIHandler := api.NewAgentHandler(agentRepo, commandQueue, agentAPIEngine)
-		httpTransport := transport.HTTPServerTransport(cfg.AgentHTTPConfig, agentAPIHandler)
-		api.RegisterAgentRoutes(agentAPIHandler)
+		httpTransport := transport.NewHTTPServerTransport(agentRepo, commandQueue, cfg.AgentHTTPConfig, agentAPIEngine)
 		server.AddTransport(httpTransport)
 	}
 
-	frontendEngine := gin.Default()
-	frontendHandler := api.NewFrontendHandler(agentRepo, frontendEngine)
+	ginEngine := gin.Default()
+	frontendHandler := api.NewFrontendHandler(agentRepo, ginEngine)
+	generalHandler := api.NewGeneralApiHandler(agentRepo, commandQueue, ginEngine)
 	api.RegisterFrontendRoutes(frontendHandler, cfg)
-	api.RegisterAuthRoutes(frontendEngine, cfg, userRepo)
-	api.StaticHandler(frontendEngine)
+	api.RegisterApiRoutes(generalHandler, cfg)
+	api.RegisterAuthRoutes(ginEngine, cfg, userRepo)
+	api.StaticHandler(ginEngine)
 	frontendServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.FrontHTTPConfig.Port),
-		Handler: frontendEngine,
+		Handler: ginEngine,
 	}
 
 	// Start frontend server in a goroutine

@@ -29,7 +29,7 @@ type HTTPServerTransport struct {
 	httpConfig      config.AgentHTTPConfig
 }
 
-func NewHTTPServerTransport(agentRepository db.IAgentRepository, commandQueue queue.IServerCommandQueue, httpConfig config.AgentHTTPConfig, engine *gin.Engine) *AgentServer {
+func NewHTTPServerTransport(agentRepository db.IAgentRepository, commandQueue queue.IServerCommandQueue, httpConfig config.AgentHTTPConfig, engine *gin.Engine) ITransportProtocol {
 	as := &HTTPServerTransport{
 		agentRepository: agentRepository,
 		commandQueue:    commandQueue,

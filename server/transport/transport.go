@@ -1,6 +1,6 @@
 package transport
 
-type TransportProtocol interface {
+type ITransportProtocol interface {
 	Start() error
 	Stop() error
 	Name() string

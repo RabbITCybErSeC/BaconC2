@@ -12,7 +12,7 @@ import (
 type Server struct {
 	agentRepository db.IAgentRepository
 	commandQueue    queue.IServerCommandQueue
-	protocols       map[string]transport.TransportProtocol
+	protocols       map[string]transport.ITransportProtocol
 	config          *config.ServerConfig
 }
 
@@ -20,12 +20,12 @@ func NewServer(db db.IAgentRepository, commandQueue queue.IServerCommandQueue, c
 	return &Server{
 		agentRepository: db,
 		commandQueue:    commandQueue,
-		protocols:       make(map[string]transport.TransportProtocol),
+		protocols:       make(map[string]transport.ITransportProtocol),
 		config:          config,
 	}
 }
 
-func (s *Server) AddTransport(tp transport.TransportProtocol) {
+func (s *Server) AddTransport(tp transport.ITransportProtocol) {
 	s.protocols[tp.Name()] = tp
 }
 

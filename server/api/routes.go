@@ -15,23 +15,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterAgentRoutes(agentHandler *AgentHandler) {
-	agentAPI := agentHandler.engine.Group("/api/agents")
-	{
-		agentAPI.Use(middleware.CorsMiddleware())
-		agentAPI.POST("/register", agentHandler.handleRegister)
-		agentAPI.POST("/beacon", agentHandler.handleBeacon)
-		agentAPI.POST("/result", agentHandler.handleCommandResult)
-		agentAPI.POST("/command", agentHandler.handleAddCommand)
-	}
-}
-
 func RegisterFrontendRoutes(frontendHandler *FrontendHandler, config *config.ServerConfig) {
-	frontendAPI := frontendHandler.engine.Group("/api/frontend")
+	frontendAPI := frontendHandler.engine.Group("/api/v1/frontend")
 	{
 		frontendAPI.Use(middleware.CorsMiddleware())
 		frontendAPI.Use(JWTMiddleware(config))
 		frontendAPI.GET("/agents", frontendHandler.handleListAgents)
+	}
+}
+
+func RegisterApiRoutes(generalHandler *GeneralApiHandler, config *config.ServerConfig) {
+	frontendAPI := generalHandler.engine.Group("/api/v1/general")
+	{
+		frontendAPI.Use(middleware.CorsMiddleware())
+		frontendAPI.Use(JWTMiddleware(config))
+		frontendAPI.GET("/queue/command", generalHandler.handleAddCommand)
 	}
 }
 

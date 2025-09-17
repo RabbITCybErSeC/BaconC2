@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
+	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
@@ -23,7 +24,7 @@ const (
 	StartShellCommand BuiltInCommand = "start_shell"
 )
 
-func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport local_models.ITransportProtocol, streamingTransport local_models.IStreamingTransport) {
+func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport) {
 	registry.RegisterHandler(string(SysInfoCommand), func(cmd models.Command) models.CommandResult {
 		return getInfoHandler(cmd, resultsQueue)
 	})

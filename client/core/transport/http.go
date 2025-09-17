@@ -36,7 +36,7 @@ type HTTPClientTransport struct {
 	encoderChain   encoders.IChainEncoder
 }
 
-func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) *HTTPClientTransport {
+func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) ITransportProtocol {
 	return &HTTPClientTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,
