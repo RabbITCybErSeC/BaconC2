@@ -20,9 +20,9 @@ const (
 )
 
 const (
-	registerAPIPath = "%s/api/agents/register"
-	beaconAPIPath   = "%s/api/agents/beacon?id=%s"
-	resultsAPIPath  = "%s/api/agents/results?id=%s"
+	registerAPIPath = "%s/api/v1/agents/register"
+	beaconAPIPath   = "%s/api/v1/agents/beacon?id=%s"
+	resultsAPIPath  = "%s/api/v1/agents/results?id=%s"
 )
 
 type HTTPClientTransport struct {

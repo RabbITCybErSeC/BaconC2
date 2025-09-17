@@ -197,7 +197,7 @@ func (as *HTTPServerTransport) handleAddCommand(c *gin.Context) {
 }
 
 func (as *HTTPServerTransport) registerAgentRoutes() {
-	agentAPI := as.engine.Group("/api/agents")
+	agentAPI := as.engine.Group("/api/v1/agents")
 	{
 		agentAPI.Use(middleware.CorsMiddleware())
 		agentAPI.POST("/register", as.handleRegister)

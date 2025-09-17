@@ -35,7 +35,7 @@ func RegisterApiRoutes(generalHandler *GeneralApiHandler, config *config.ServerC
 
 func RegisterAuthRoutes(engine *gin.Engine, config *config.ServerConfig, userRepo db.UserRepositoryInterface) {
 	authHandler := NewAuthHandler(config, userRepo)
-	authAPI := engine.Group("/api/auth")
+	authAPI := engine.Group("/api/v1/auth")
 	{
 		authAPI.Use(middleware.CorsMiddleware())
 		authAPI.POST("/login", authHandler.handleLogin)

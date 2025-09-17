@@ -49,7 +49,7 @@ export const setupAxiosInterceptors = (): void => {
 export const login = async (credentials: LoginRequest): Promise<string> => {
   try {
     const response = await axios.post<LoginResponse>(
-      `${API_URL}/api/auth/login`,
+      `${API_URL}/api/v1/auth/login`,
       credentials
     );
 

@@ -28,7 +28,7 @@ const AgentInventory: React.FC = () => {
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const response = await fetch('/api/frontend/agents', {
+        const response = await fetch('/api/v1/frontend/agents', {
           headers: {
             'Authorization': getToken() || '',
             'Content-Type': 'application/json',
