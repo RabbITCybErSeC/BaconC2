@@ -81,7 +81,7 @@ func (e *DefaultCommandExecutor) ProcessCommandQueue() {
 	for {
 		cmd, ok := e.queue.Get()
 		if !ok {
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 		result := e.Execute(cmd)
@@ -93,7 +93,7 @@ func (e *DefaultCommandExecutor) ProcessCommandQueue() {
 			e.queue.RemoveFirst()
 		}
 
-		time.Sleep(100 * time.Millisecond) // Prevent tight loop
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
