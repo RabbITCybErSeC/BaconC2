@@ -8,6 +8,7 @@ Bacon is a small C2 framework, which aims to support stealthy communication tech
 
 BaconC2 was created as a learning platform to experiment with advanced C2 techniques, focusing on stealth, security, and flexibility. It aims to simulate real-world C2 scenarios while providing a foundation for research into malware development and network pivoting.
 
+
 ## Features
 
 - **Modular Client Architecture**:
@@ -32,6 +33,7 @@ BaconC2 was created as a learning platform to experiment with advanced C2 techni
   - Thread-safe transport and queue implementations.
   - Planned encryption for shell sessions and sensitive data (e.g., AES).
 
+
 ## Goals
 
 - Develop an intuitive web interface for managing connected agents and executing commands.
@@ -44,6 +46,11 @@ BaconC2 was created as a learning platform to experiment with advanced C2 techni
 ## Getting Started
 
 *Instructions for setting up BaconC2 will be added as the project matures. Currently, the client is under active development, focusing on core functionality and transport protocols.*
+
+## API
+
+
+curl -X POST http://localhost:8081/api/agents/command?id={id} -H 'Content-Type: application/json' -d '{ "id": "cmd-001", "command": "whoami", "status": "pending" }' -v
 
 ## Contributing
 
