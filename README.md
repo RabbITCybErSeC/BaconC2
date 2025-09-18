@@ -78,7 +78,7 @@ BaconC2 was created as a learning platform to experiment with advanced C2 techni
 ### General API
 
 #### Add Command to Queue
-- **Endpoint**: `GET /api/v1/general/queue/command`
+- **Endpoint**: `GET /api/v1/general/queue/command/:id`
 - **Description**: Add a command to the execution queue
 - **Headers**: 
   - `Authorization: Bearer <jwt_token>`
