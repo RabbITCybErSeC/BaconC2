@@ -84,7 +84,6 @@ BaconC2 was created as a learning platform to experiment with advanced C2 techni
   - `Authorization: Bearer <jwt_token>`
 - **Query Parameters**: 
   - `command`: The command to execute
-  - `agent_id`: ID of the target agent
 - **Response**: Command queued status
 
 #### Example:
