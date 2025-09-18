@@ -47,10 +47,51 @@ BaconC2 was created as a learning platform to experiment with advanced C2 techni
 
 *Instructions for setting up BaconC2 will be added as the project matures. Currently, the client is under active development, focusing on core functionality and transport protocols.*
 
-## API
 
+## BaconC2 API Documentation
 
-curl -X POST http://localhost:8081/api/agents/command?id={id} -H 'Content-Type: application/json' -d '{ "id": "cmd-001", "command": "whoami", "status": "pending" }' -v
+### Authentication
+
+#### Login
+- **Endpoint**: `POST /api/v1/auth/login`
+- **Description**: Authenticate and receive a JWT token
+- **Headers**: 
+  - `Content-Type: application/json`
+- **Body**: 
+  ```json
+  {
+    "username": "string",
+    "password": "string"
+  }
+  ```
+- **Response**: JWT token for authenticated requests
+
+### Frontend API
+
+### List Agents
+- **Endpoint**: `GET /api/v1/frontend/agents`
+- **Description**: Get list of all agents
+- **Headers**: 
+  - `Authorization: Bearer <jwt_token>`
+- **Response**: List of agent objects
+
+### General API
+
+#### Add Command to Queue
+- **Endpoint**: `GET /api/v1/general/queue/command`
+- **Description**: Add a command to the execution queue
+- **Headers**: 
+  - `Authorization: Bearer <jwt_token>`
+- **Query Parameters**: 
+  - `command`: The command to execute
+  - `agent_id`: ID of the target agent
+- **Response**: Command queued status
+
+#### Example:
+
+```bash
+curl -X POST http://localhost:8081/api/agents/command?id={id} -H 'Content-Type: application/json' -d '{ "command": "whoami"}' -v
+```
 
 ## Contributing
 

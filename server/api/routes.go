@@ -28,8 +28,8 @@ func RegisterApiRoutes(generalHandler *GeneralApiHandler, config *config.ServerC
 	frontendAPI := generalHandler.engine.Group("/api/v1/general")
 	{
 		frontendAPI.Use(middleware.CorsMiddleware())
-		frontendAPI.Use(JWTMiddleware(config))
-		frontendAPI.GET("/queue/command", generalHandler.handleAddCommand)
+		//frontendAPI.Use(JWTMiddleware(config))
+		frontendAPI.GET("/queue/command/:id", generalHandler.handleAddCommand)
 	}
 }
 
