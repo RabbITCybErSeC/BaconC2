@@ -202,7 +202,7 @@ func (as *HTTPServerTransport) registerAgentRoutes() {
 		agentAPI.Use(middleware.CorsMiddleware())
 		agentAPI.POST("/register", as.handleRegister)
 		agentAPI.POST("/beacon", as.handleBeacon)
-		agentAPI.POST("/result", as.handleCommandResult)
+		agentAPI.POST("/results", as.handleCommandResult)
 		agentAPI.POST("/command", as.handleAddCommand)
 	}
 }

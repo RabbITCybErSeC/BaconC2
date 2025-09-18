@@ -6,5 +6,5 @@ type ITransportProtocol interface {
 	Initialize(agent models.Agent) error
 	Start() error
 	Stop() error
-	// Name() string
+	SendResults() error
 }
