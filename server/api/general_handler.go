@@ -51,7 +51,7 @@ func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
 		return
 	}
 
-	_, err := h.agentRepository.Get(agentID)
+	_, err := h.agentRepository.GetAgent(c.Request.Context(), agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -68,7 +68,7 @@ func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
 		UpdatedAt: time.Now(),
 	}
 
-	if err := h.agentRepository.AddCommand(&agentCmd); err != nil {
+	if err := h.agentRepository.SaveCommand(c.Request.Context(), &agentCmd); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

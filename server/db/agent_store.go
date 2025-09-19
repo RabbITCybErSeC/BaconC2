@@ -1,42 +1,48 @@
 package db
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
+var ErrNotFound = errors.New("record not found")
+
 type IAgentRepository interface {
-	Save(agent *local_models.ServerAgentModel) error
-	Get(id string) (*local_models.ServerAgentModel, error)
-	GetAll() ([]local_models.ServerAgentModel, error)
-	Delete(id string) error
+	SaveAgent(ctx context.Context, agent *local_models.ServerAgentModel) error
+	GetAgent(ctx context.Context, id string) (*local_models.ServerAgentModel, error)
+	GetAllAgents(ctx context.Context) ([]local_models.ServerAgentModel, error)
+	DeleteAgent(ctx context.Context, id string) error
 
-	GetWithExtendedInfo(id string) (*local_models.ServerAgentModel, error)
-	GetWithAllRelations(id string) (*local_models.ServerAgentModel, error)
-	GetActiveAgents() ([]local_models.ServerAgentModel, error)
+	GetWithExtendedInfo(ctx context.Context, id string) (*local_models.ServerAgentModel, error)
+	GetWithAllRelations(ctx context.Context, id string) (*local_models.ServerAgentModel, error)
+	GetActiveAgents(ctx context.Context) ([]local_models.ServerAgentModel, error)
 
-	UpdateExtendedInfo(agentID string, info *models.ExtendedAgentInfo) error
-	UpdateLastSeen(agentID string) error
+	UpdateExtendedInfo(ctx context.Context, agentID string, info *models.ExtendedAgentInfo) error
+	UpdateLastSeen(ctx context.Context, agentID string) error
 
-	GetExtendedInfo(agentID string) (*models.ExtendedAgentInfo, error)
+	GetExtendedInfo(ctx context.Context, agentID string) (*models.ExtendedAgentInfo, error)
 
-	CreateSession(session *local_models.AgentSession) error
-	EndSession(sessionID string) error
-	GetActiveSessions() ([]local_models.AgentSession, error)
-	GetAgentSessions(agentID string) ([]local_models.AgentSession, error)
+	CreateSession(ctx context.Context, session *local_models.AgentSession) error
+	EndSession(ctx context.Context, sessionID string) error
+	GetActiveSessions(ctx context.Context) ([]local_models.AgentSession, error)
+	GetAgentSessions(ctx context.Context, agentID string) ([]local_models.AgentSession, error)
 
-	AddCommand(command *local_models.AgentCommand) error
-	GetCommandsByStatus(agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error)
-	GetCommands(agentID string, limit int) ([]local_models.AgentCommand, error)
-	UpdateCommandStatus(commandID string, status models.CommandStatus) error
+	SaveCommand(ctx context.Context, command *local_models.AgentCommand) error
+	GetCommandsByStatus(ctx context.Context, agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error)
+	GetCommands(ctx context.Context, agentID string, limit int) ([]local_models.AgentCommand, error)
+	UpdateCommandStatus(ctx context.Context, commandID string, status models.CommandStatus) error
 
-	SaveCommandResult(commandID string, result *models.CommandResult) error
-	UpdateCommandStatusWithResult(commandID string, status models.CommandStatus, output any) error
-	GetCommandResult(commandID string) (*models.CommandResult, error)
+	SaveCommandResult(ctx context.Context, commandID string, result *models.CommandResult) error
+	UpdateCommandStatusWithResult(ctx context.Context, commandID string, status models.CommandStatus, output any) error
+	GetCommandResult(ctx context.Context, commandID string) (*models.CommandResult, error)
 }
 
 type AgentRepository struct {
@@ -47,281 +53,264 @@ func NewAgentRepository(db *gorm.DB) *AgentRepository {
 	return &AgentRepository{db: db}
 }
 
-// AutoMigrate creates all tables
-func (s *AgentRepository) AutoMigrate() error {
-	return s.db.AutoMigrate(
-		&local_models.ServerAgentModel{},
-		&local_models.AgentCommand{},
-		&local_models.AgentSession{},
-		&models.CommandResult{},
-	)
+func (s *AgentRepository) SaveAgent(ctx context.Context, agent *local_models.ServerAgentModel) error {
+	if err := s.db.WithContext(ctx).Save(agent).Error; err != nil {
+		return fmt.Errorf("could not save agent %s: %w", agent.ID, err)
+	}
+	return nil
 }
 
-// Basic CRUD operations
-func (s *AgentRepository) Save(agent *local_models.ServerAgentModel) error {
-	return s.db.Save(agent).Error
-}
-
-func (s *AgentRepository) Get(id string) (*local_models.ServerAgentModel, error) {
+func (s *AgentRepository) GetAgent(ctx context.Context, id string) (*local_models.ServerAgentModel, error) {
 	var agent local_models.ServerAgentModel
-	err := s.db.First(&agent, "id = ?", id).Error
+	err := s.db.WithContext(ctx).First(&agent, "id = ?", id).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("could not get agent %s: %w", id, err)
 	}
 	return &agent, nil
 }
 
-func (s *AgentRepository) GetAll() ([]local_models.ServerAgentModel, error) {
+func (s *AgentRepository) GetAllAgents(ctx context.Context) ([]local_models.ServerAgentModel, error) {
 	var agents []local_models.ServerAgentModel
-	err := s.db.Find(&agents).Error
-	if err != nil {
-		return nil, err
+	if err := s.db.WithContext(ctx).Find(&agents).Error; err != nil {
+		return nil, fmt.Errorf("could not get all agents: %w", err)
 	}
 	return agents, nil
 }
 
-func (s *AgentRepository) Delete(id string) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
-		// Delete related records first
+func (s *AgentRepository) DeleteAgent(ctx context.Context, id string) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Note: Depending on DB engine and schema, foreign key constraints with cascading deletes
+		// might be a cleaner solution. This manual approach is DB-agnostic.
 		if err := tx.Where("agent_id = ?", id).Delete(&local_models.AgentCommand{}).Error; err != nil {
-			return err
+			return fmt.Errorf("could not delete commands for agent %s: %w", id, err)
 		}
 		if err := tx.Where("agent_id = ?", id).Delete(&local_models.AgentSession{}).Error; err != nil {
-			return err
+			return fmt.Errorf("could not delete sessions for agent %s: %w", id, err)
 		}
-		// Delete the agent
-		return tx.Delete(&local_models.ServerAgentModel{}, "id = ?", id).Error
+		if err := tx.Delete(&local_models.ServerAgentModel{}, "id = ?", id).Error; err != nil {
+			return fmt.Errorf("could not delete agent %s: %w", id, err)
+		}
+		return nil
 	})
 }
 
-// Extended operations with relationships
-func (s *AgentRepository) GetWithExtendedInfo(id string) (*local_models.ServerAgentModel, error) {
+func (s *AgentRepository) GetWithExtendedInfo(ctx context.Context, id string) (*local_models.ServerAgentModel, error) {
 	var agent local_models.ServerAgentModel
-	err := s.db.Preload("ExtendedInfo").First(&agent, "id = ?", id).Error
+	err := s.db.WithContext(ctx).Preload("ExtendedInfo").First(&agent, "id = ?", id).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("could not get agent %s with extended info: %w", id, err)
 	}
 	return &agent, nil
 }
 
-func (s *AgentRepository) GetWithAllRelations(id string) (*local_models.ServerAgentModel, error) {
+func (s *AgentRepository) GetWithAllRelations(ctx context.Context, id string) (*local_models.ServerAgentModel, error) {
 	var agent local_models.ServerAgentModel
-	err := s.db.
+	err := s.db.WithContext(ctx).
 		Preload("Commands").
 		Preload("ExtendedInfo").
 		Preload("Sessions").
 		First(&agent, "id = ?", id).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("could not get agent %s with all relations: %w", id, err)
 	}
 	return &agent, nil
 }
 
-func (s *AgentRepository) GetActiveAgents() ([]local_models.ServerAgentModel, error) {
+func (s *AgentRepository) GetActiveAgents(ctx context.Context) ([]local_models.ServerAgentModel, error) {
 	var agents []local_models.ServerAgentModel
-	err := s.db.Where("is_active = ?", true).
+	err := s.db.WithContext(ctx).Where("is_active = ?", true).
 		Preload("ExtendedInfo").
 		Find(&agents).Error
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get active agents: %w", err)
 	}
 	return agents, nil
 }
 
-// Extended info operations
-func (s *AgentRepository) UpdateExtendedInfo(agentID string, info *models.ExtendedAgentInfo) error {
+func (s *AgentRepository) UpdateExtendedInfo(ctx context.Context, agentID string, info *models.ExtendedAgentInfo) error {
 	info.AgentID = agentID
-	return s.db.Save(info).Error
+	if err := s.db.WithContext(ctx).Save(info).Error; err != nil {
+		return fmt.Errorf("could not update extended info for agent %s: %w", agentID, err)
+	}
+	return nil
 }
 
-func (s *AgentRepository) GetExtendedInfo(agentID string) (*models.ExtendedAgentInfo, error) {
-	var info models.ExtendedAgentInfo
-	err := s.db.Where("agent_id = ?", agentID).First(&info).Error
+func (s *AgentRepository) UpdateLastSeen(ctx context.Context, agentID string) error {
+	err := s.db.WithContext(ctx).Model(&local_models.ServerAgentModel{}).
+		Where("id = ?", agentID).
+		UpdateColumn("last_seen", time.Now()).Error
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("could not update last_seen for agent %s: %w", agentID, err)
+	}
+	return nil
+}
+
+func (s *AgentRepository) GetExtendedInfo(ctx context.Context, agentID string) (*models.ExtendedAgentInfo, error) {
+	var info models.ExtendedAgentInfo
+	err := s.db.WithContext(ctx).Where("agent_id = ?", agentID).First(&info).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("could not get extended info for agent %s: %w", agentID, err)
 	}
 	return &info, nil
 }
 
-// Session operations
-func (s *AgentRepository) CreateSession(session *local_models.AgentSession) error {
-	return s.db.Create(session).Error
+func (s *AgentRepository) CreateSession(ctx context.Context, session *local_models.AgentSession) error {
+	if err := s.db.WithContext(ctx).Create(session).Error; err != nil {
+		return fmt.Errorf("could not create session for agent %s: %w", session.AgentID, err)
+	}
+	return nil
 }
 
-func (s *AgentRepository) EndSession(sessionID string) error {
-	now := time.Now()
-	return s.db.Model(&local_models.AgentSession{}).
+func (s *AgentRepository) EndSession(ctx context.Context, sessionID string) error {
+	updates := map[string]interface{}{
+		"is_active": false,
+		"end_time":  time.Now(),
+	}
+	err := s.db.WithContext(ctx).Model(&local_models.AgentSession{}).
 		Where("session_id = ?", sessionID).
-		Updates(map[string]interface{}{
-			"end_time":  &now,
-			"is_active": false,
-		}).Error
+		Updates(updates).Error
+	if err != nil {
+		return fmt.Errorf("could not end session %s: %w", sessionID, err)
+	}
+	return nil
 }
 
-func (s *AgentRepository) GetActiveSessions() ([]local_models.AgentSession, error) {
+func (s *AgentRepository) GetActiveSessions(ctx context.Context) ([]local_models.AgentSession, error) {
 	var sessions []local_models.AgentSession
-	err := s.db.Where("is_active = ?", true).Find(&sessions).Error
+	err := s.db.WithContext(ctx).Where("is_active = ?", true).Find(&sessions).Error
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get active sessions: %w", err)
 	}
 	return sessions, nil
 }
 
-func (s *AgentRepository) GetAgentSessions(agentID string) ([]local_models.AgentSession, error) {
+func (s *AgentRepository) GetAgentSessions(ctx context.Context, agentID string) ([]local_models.AgentSession, error) {
 	var sessions []local_models.AgentSession
-	err := s.db.Where("agent_id = ?", agentID).
+	err := s.db.WithContext(ctx).Where("agent_id = ?", agentID).
 		Order("created_at DESC").
 		Find(&sessions).Error
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get sessions for agent %s: %w", agentID, err)
 	}
 	return sessions, nil
 }
 
 // Command operations
-func (s *AgentRepository) AddCommand(command *local_models.AgentCommand) error {
-	return s.db.Create(command).Error
-}
 
-func (s *AgentRepository) GetCommandsByStatus(agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error) {
-	var commands []local_models.AgentCommand
-	err := s.db.Where("agent_id = ? AND status = ?", agentID, status).
-		Order("created_at ASC").
-		Find(&commands).Error
-	if err != nil {
-		return nil, err
-	}
-	return commands, nil
-}
-
-func (s *AgentRepository) UpdateCommandStatus(commandID string, status models.CommandStatus) error {
-	result := s.db.Model(&local_models.AgentCommand{}).
-		Where("id = ?", commandID).
-		Update("status", status)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("no command found with ID %s", commandID)
+func (s *AgentRepository) SaveCommand(ctx context.Context, command *local_models.AgentCommand) error {
+	if err := s.db.WithContext(ctx).Create(command).Error; err != nil {
+		return fmt.Errorf("could not add command %s for agent %s: %w", command.ID, command.AgentID, err)
 	}
 	return nil
 }
 
-func (s *AgentRepository) GetCommands(agentID string, limit int) ([]local_models.AgentCommand, error) {
+func (s *AgentRepository) GetCommandsByStatus(ctx context.Context, agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error) {
 	var commands []local_models.AgentCommand
-	query := s.db.Where("agent_id = ?", agentID).
+	err := s.db.WithContext(ctx).Where("agent_id = ? AND status = ?", agentID, status).
+		Order("created_at ASC").
+		Find(&commands).Error
+	if err != nil {
+		return nil, fmt.Errorf("could not get commands with status %d for agent %s: %w", status, agentID, err)
+	}
+	return commands, nil
+}
+
+// updateCommandStatus is a private helper for use in transactions
+func (s *AgentRepository) updateCommandStatus(db *gorm.DB, ctx context.Context, commandID string, status models.CommandStatus) error {
+	result := db.WithContext(ctx).Model(&local_models.AgentCommand{}).
+		Where("id = ?", commandID).
+		Update("status", status)
+	if result.Error != nil {
+		return fmt.Errorf("could not update status for command %s: %w", commandID, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no command found with ID %s to update", commandID)
+	}
+	return nil
+}
+
+func (s *AgentRepository) UpdateCommandStatus(ctx context.Context, commandID string, status models.CommandStatus) error {
+	return s.updateCommandStatus(s.db, ctx, commandID, status)
+}
+
+func (s *AgentRepository) GetCommands(ctx context.Context, agentID string, limit int) ([]local_models.AgentCommand, error) {
+	var commands []local_models.AgentCommand
+	query := s.db.WithContext(ctx).Where("agent_id = ?", agentID).
 		Order("created_at DESC")
 
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
 
-	err := query.Find(&commands).Error
-	if err != nil {
-		return nil, err
+	if err := query.Find(&commands).Error; err != nil {
+		return nil, fmt.Errorf("could not get commands for agent %s: %w", agentID, err)
 	}
 	return commands, nil
 }
 
-// Utility methods
-func (s *AgentRepository) GetAgentStats() (map[string]interface{}, error) {
-	stats := make(map[string]interface{})
+// saveCommandResult is a private helper for use in transactions
+func (s *AgentRepository) saveCommandResult(db *gorm.DB, ctx context.Context, commandID string, result *models.CommandResult) error {
+	result.CommandID = commandID
+	err := db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "command_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"output"}),
+	}).Create(result).Error
 
-	// Count total agents
-	var totalAgents int64
-	if err := s.db.Model(&local_models.ServerAgentModel{}).Count(&totalAgents).Error; err != nil {
-		return nil, err
-	}
-	stats["total_agents"] = totalAgents
-
-	// Count active agents
-	var activeAgents int64
-	if err := s.db.Model(&local_models.ServerAgentModel{}).Where("is_active = ?", true).Count(&activeAgents).Error; err != nil {
-		return nil, err
-	}
-	stats["active_agents"] = activeAgents
-
-	// Count active sessions
-	var activeSessions int64
-	if err := s.db.Model(&local_models.AgentSession{}).Where("is_active = ?", true).Count(&activeSessions).Error; err != nil {
-		return nil, err
-	}
-	stats["active_sessions"] = activeSessions
-
-	// Count total commands
-	var totalCommands int64
-	if err := s.db.Model(&local_models.AgentCommand{}).Count(&totalCommands).Error; err != nil {
-		return nil, err
-	}
-	stats["total_commands"] = totalCommands
-
-	return stats, nil
-}
-
-// Search and filter methods
-func (s *AgentRepository) SearchAgents(query string, limit int) ([]local_models.ServerAgentModel, error) {
-	var agents []local_models.ServerAgentModel
-
-	searchQuery := fmt.Sprintf("%%%s%%", query)
-	err := s.db.Where("id LIKE ? OR hostname LIKE ?", searchQuery, searchQuery).
-		Limit(limit).
-		Preload("ExtendedInfo").
-		Find(&agents).Error
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("could not save command result for command %s: %w", commandID, err)
 	}
-	return agents, nil
+	return nil
 }
 
-// Get agents that haven't been seen recently
-func (s *AgentRepository) GetStaleAgents(threshold time.Duration) ([]local_models.ServerAgentModel, error) {
-	var agents []local_models.ServerAgentModel
-	cutoff := time.Now().Add(-threshold)
+// SaveCommandResult creates or updates the result of a command.
+func (s *AgentRepository) SaveCommandResult(ctx context.Context, commandID string, result *models.CommandResult) error {
+	return s.saveCommandResult(s.db, ctx, commandID, result)
+}
 
-	err := s.db.Where("last_seen < ? AND is_active = ?", cutoff, true).
-		Find(&agents).Error
+func (s *AgentRepository) UpdateCommandStatusWithResult(ctx context.Context, commandID string, status models.CommandStatus, output any) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+
+		if err := s.updateCommandStatus(tx, ctx, commandID, status); err != nil {
+			return err
+		}
+
+		outputBytes, err := json.Marshal(output)
+		if err != nil {
+			return fmt.Errorf("failed to marshal command output for command %s: %w", commandID, err)
+		}
+
+		commandResult := models.CommandResult{
+			CommandID: commandID,
+			Output:    string(outputBytes),
+		}
+		if err := s.saveCommandResult(tx, ctx, commandID, &commandResult); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *AgentRepository) GetCommandResult(ctx context.Context, commandID string) (*models.CommandResult, error) {
+	var result models.CommandResult
+	err := s.db.WithContext(ctx).Where("command_id = ?", commandID).First(&result).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("could not get result for command %s: %w", commandID, err)
 	}
-	return agents, nil
-}
-
-// Update agent last seen timestamp
-func (s *AgentRepository) UpdateLastSeen(agentID string) error {
-	return s.db.Model(&local_models.ServerAgentModel{}).
-		Where("id = ?", agentID).
-		Update("last_seen", time.Now()).Error
-}
-
-// Get recent commands for an agent
-func (s *AgentRepository) GetRecentCommands(agentID string, since time.Time) ([]local_models.AgentCommand, error) {
-	var commands []local_models.AgentCommand
-	err := s.db.Where("agent_id = ? AND created_at > ?", agentID, since).
-		Order("created_at DESC").
-		Find(&commands).Error
-	if err != nil {
-		return nil, err
-	}
-	return commands, nil
-}
-
-// Batch operations
-func (s *AgentRepository) MarkAgentsInactive(agentIDs []string) error {
-	return s.db.Model(&local_models.ServerAgentModel{}).
-		Where("id IN ?", agentIDs).
-		Updates(map[string]any{
-			"is_active": false,
-			"last_seen": time.Now(),
-		}).Error
-}
-
-// Get active session for an agent
-func (s *AgentRepository) GetActiveSessionForAgent(agentID string) (*local_models.AgentSession, error) {
-	var session local_models.AgentSession
-	err := s.db.Where("agent_id = ? AND is_active = ?", agentID, true).
-		First(&session).Error
-	if err != nil {
-		return nil, err
-	}
-	return &session, nil
+	return &result, nil
 }

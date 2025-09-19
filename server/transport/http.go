@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -46,6 +47,17 @@ func NewHTTPServerTransport(agentRepository db.IAgentRepository, commandQueue qu
 	return as
 }
 
+func (as *HTTPServerTransport) registerAgentRoutes() {
+	agentAPI := as.engine.Group("/api/v1/agents")
+	{
+		agentAPI.Use(middleware.CorsMiddleware())
+		agentAPI.POST("/register", as.handleRegister)
+		agentAPI.POST("/beacon", as.handleBeacon)
+		agentAPI.POST("/results", as.handleCommandResult)
+		agentAPI.POST("/command", as.handleAddCommand)
+	}
+}
+
 func (as *HTTPServerTransport) GinEngine() *gin.Engine {
 	return as.engine
 }
@@ -64,7 +76,8 @@ func (as *HTTPServerTransport) handleRegister(c *gin.Context) {
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
 	agent.Commands = []local_models.AgentCommand{}
-	if err := as.agentRepository.Save(&agent); err != nil {
+
+	if err := as.agentRepository.SaveAgent(c.Request.Context(), &agent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -80,19 +93,19 @@ func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
 		return
 	}
 
-	_, err := as.agentRepository.Get(agentID)
+	_, err := as.agentRepository.GetAgent(c.Request.Context(), agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
 	}
 
 	// Update agent's last seen timestamp
-	if err := as.agentRepository.UpdateLastSeen(agentID); err != nil {
+	if err := as.agentRepository.UpdateLastSeen(c.Request.Context(), agentID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update last seen: " + err.Error()})
 		return
 	}
 
-	commands, err := as.agentRepository.GetCommandsByStatus(agentID, models.CommandStatusPending)
+	commands, err := as.agentRepository.GetCommandsByStatus(c.Request.Context(), agentID, models.CommandStatusPending)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -101,7 +114,7 @@ func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
 	if len(commands) > 0 {
 		cmd := commands[0]
 
-		if err := as.agentRepository.UpdateCommandStatus(cmd.ID, models.CommandStatusSentToClient); err != nil {
+		if err := as.agentRepository.UpdateCommandStatus(c.Request.Context(), cmd.ID, models.CommandStatusSentToClient); err != nil {
 			c.JSON(http.StatusInternalServerError, models.HttpBeaconResponse{
 				Status:         models.CommandStatusFailed,
 				RequestResults: false,
@@ -132,23 +145,40 @@ func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
 		return
 	}
 
-	var result local_models.AgentCommand
-	if err := c.ShouldBindJSON(&result); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var results []models.CommandResult
+	if err := c.ShouldBindJSON(&results); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
 		return
 	}
 
-	_, err := as.agentRepository.Get(agentID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+	if _, err := as.agentRepository.GetAgent(c.Request.Context(), agentID); err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+		} else {
+			log.Printf("Error verifying agent %s: %v", agentID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify agent existence"})
+		}
 		return
 	}
 
-	result.AgentID = agentID
-	result.Command.Status = "completed"
-	if err := as.agentRepository.AddCommand(&result); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	for _, result := range results {
+		if result.CommandID == "" {
+			log.Printf("Skipping result with empty CommandID from agent %s", agentID)
+			continue
+		}
+
+		err := as.agentRepository.UpdateCommandStatusWithResult(
+			c.Request.Context(),
+			result.CommandID,
+			result.Status,
+			result.Output,
+		)
+
+		if err != nil {
+			log.Printf("Failed to save result for command %s from agent %s: %v", result.CommandID, agentID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process command result for " + result.CommandID})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "received"})
@@ -171,7 +201,7 @@ func (as *HTTPServerTransport) handleAddCommand(c *gin.Context) {
 		return
 	}
 
-	_, err := as.agentRepository.Get(agentID)
+	_, err := as.agentRepository.GetAgent(c.Request.Context(), agentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -188,23 +218,12 @@ func (as *HTTPServerTransport) handleAddCommand(c *gin.Context) {
 		UpdatedAt: time.Now(),
 	}
 
-	if err := as.agentRepository.AddCommand(&agentCmd); err != nil {
+	if err := as.agentRepository.SaveCommand(c.Request.Context(), &agentCmd); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "queued", "id": agentCmd.ID})
-}
-
-func (as *HTTPServerTransport) registerAgentRoutes() {
-	agentAPI := as.engine.Group("/api/v1/agents")
-	{
-		agentAPI.Use(middleware.CorsMiddleware())
-		agentAPI.POST("/register", as.handleRegister)
-		agentAPI.POST("/beacon", as.handleBeacon)
-		agentAPI.POST("/results", as.handleCommandResult)
-		agentAPI.POST("/command", as.handleAddCommand)
-	}
 }
 
 func (as *HTTPServerTransport) Start() error {
