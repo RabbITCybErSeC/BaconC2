@@ -33,9 +33,10 @@ type Command struct {
 }
 
 type CommandResult struct {
-	ID     string        `json:"id"`
-	Status CommandStatus `json:"status"`
-	Output any           `json:"output,omitempty" gorm:"-"`
+	ID        string        `json:"id"`
+	CommandID string        `json:"command_id,omitempty"`
+	Status    CommandStatus `json:"status"`
+	Output    any           `json:"output,omitempty" gorm:"-"`
 }
 
 type ICommandExecutor interface {

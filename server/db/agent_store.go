@@ -33,6 +33,10 @@ type IAgentRepository interface {
 	GetCommandsByStatus(agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error)
 	GetCommands(agentID string, limit int) ([]local_models.AgentCommand, error)
 	UpdateCommandStatus(commandID string, status models.CommandStatus) error
+
+	SaveCommandResult(commandID string, result *models.CommandResult) error
+	UpdateCommandStatusWithResult(commandID string, status models.CommandStatus, output any) error
+	GetCommandResult(commandID string) (*models.CommandResult, error)
 }
 
 type AgentRepository struct {
@@ -49,6 +53,7 @@ func (s *AgentRepository) AutoMigrate() error {
 		&local_models.ServerAgentModel{},
 		&local_models.AgentCommand{},
 		&local_models.AgentSession{},
+		&models.CommandResult{},
 	)
 }
 
