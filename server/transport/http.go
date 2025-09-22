@@ -162,21 +162,21 @@ func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
 	}
 
 	for _, result := range results {
-		if result.CommandID == "" {
+		if result.ID == "" {
 			log.Printf("Skipping result with empty CommandID from agent %s", agentID)
 			continue
 		}
 
 		err := as.agentRepository.UpdateCommandStatusWithResult(
 			c.Request.Context(),
-			result.CommandID,
+			result.ID,
 			result.Status,
 			result.Output,
 		)
 
 		if err != nil {
-			log.Printf("Failed to save result for command %s from agent %s: %v", result.CommandID, agentID, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process command result for " + result.CommandID})
+			log.Printf("Failed to save result for command %s from agent %s: %v", result.ID, agentID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process command result for " + result.ID})
 			return
 		}
 	}

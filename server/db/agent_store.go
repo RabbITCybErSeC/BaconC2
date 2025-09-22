@@ -36,12 +36,11 @@ type IAgentRepository interface {
 	GetAgentSessions(ctx context.Context, agentID string) ([]local_models.AgentSession, error)
 
 	SaveCommand(ctx context.Context, command *local_models.AgentCommand) error
-	GetCommandsByStatus(ctx context.Context, agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error)
 	GetCommands(ctx context.Context, agentID string, limit int) ([]local_models.AgentCommand, error)
 	UpdateCommandStatus(ctx context.Context, commandID string, status models.CommandStatus) error
 
-	SaveCommandResult(ctx context.Context, commandID string, result *models.CommandResult) error
-	UpdateCommandStatusWithResult(ctx context.Context, commandID string, status models.CommandStatus, output any) error
+	SaveCommandResult(ctx context.Context, result *local_models.AgentCommandResult) error
+	UpdateCommandStatusWithResult(ctx context.Context, agentID, commandID string, status models.CommandStatus, output any) error
 	GetCommandResult(ctx context.Context, commandID string) (*models.CommandResult, error)
 }
 
@@ -261,25 +260,23 @@ func (s *AgentRepository) GetCommands(ctx context.Context, agentID string, limit
 }
 
 // saveCommandResult is a private helper for use in transactions
-func (s *AgentRepository) saveCommandResult(db *gorm.DB, ctx context.Context, commandID string, result *models.CommandResult) error {
-	result.CommandID = commandID
+func (s *AgentRepository) saveCommandResult(db *gorm.DB, ctx context.Context, result *local_models.AgentCommandResult) error {
 	err := db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "command_id"}},
+		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"output"}),
 	}).Create(result).Error
 
 	if err != nil {
-		return fmt.Errorf("could not save command result for command %s: %w", commandID, err)
+		return fmt.Errorf("could not save command result for command %s: %w", result.ID, err)
 	}
 	return nil
 }
 
-// SaveCommandResult creates or updates the result of a command.
-func (s *AgentRepository) SaveCommandResult(ctx context.Context, commandID string, result *models.CommandResult) error {
-	return s.saveCommandResult(s.db, ctx, commandID, result)
+func (s *AgentRepository) SaveCommandResult(ctx context.Context, result *local_models.AgentCommandResult) error {
+	return s.saveCommandResult(s.db, ctx, result)
 }
 
-func (s *AgentRepository) UpdateCommandStatusWithResult(ctx context.Context, commandID string, status models.CommandStatus, output any) error {
+func (s *AgentRepository) UpdateCommandStatusWithResult(ctx context.Context, agentID, commandID string, status models.CommandStatus, output any) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 
 		if err := s.updateCommandStatus(tx, ctx, commandID, status); err != nil {
@@ -291,11 +288,16 @@ func (s *AgentRepository) UpdateCommandStatusWithResult(ctx context.Context, com
 			return fmt.Errorf("failed to marshal command output for command %s: %w", commandID, err)
 		}
 
-		commandResult := models.CommandResult{
-			CommandID: commandID,
-			Output:    string(outputBytes),
+		commandResult := local_models.AgentCommandResult{
+			AgentID: agentID,
+			CommandResult: models.CommandResult{
+				ID:     commandID,
+				Status: status,
+				Output: string(outputBytes),
+			},
 		}
-		if err := s.saveCommandResult(tx, ctx, commandID, &commandResult); err != nil {
+
+		if err := s.saveCommandResult(tx, ctx, &commandResult); err != nil {
 			return err
 		}
 

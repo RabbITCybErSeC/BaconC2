@@ -6,7 +6,6 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
-	"github.com/RabbITCybErSeC/BaconC2/server/models"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -39,32 +38,6 @@ type Claims struct {
 	UserID string `json:"user_id"`
 	JTI    string `json:"jti"`
 	jwt.RegisteredClaims
-}
-
-func (h *AuthHandler) handleRegister(c *gin.Context) {
-	var req RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-		return
-	}
-
-	user := &models.User{
-		Username: req.UserName,
-		Password: string(hashedPassword),
-	}
-
-	if err := h.userRepo.Save(user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User already exists"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "User registered"})
 }
 
 func (h *AuthHandler) handleLogin(c *gin.Context) {

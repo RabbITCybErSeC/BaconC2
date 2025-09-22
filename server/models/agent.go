@@ -14,6 +14,13 @@ type AgentCommand struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+type AgentCommandResult struct {
+	AgentID              string `json:"agent_id" gorm:"index"`
+	models.CommandResult `gorm:"embedded"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
 type ServerAgentModel struct {
 	models.Agent `gorm:"embedded"`
 	LastSeen     time.Time                `json:"last_seen" gorm:"column:last_seen"`
