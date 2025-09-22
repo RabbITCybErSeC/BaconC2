@@ -36,6 +36,7 @@ type IAgentRepository interface {
 	GetAgentSessions(ctx context.Context, agentID string) ([]local_models.AgentSession, error)
 
 	SaveCommand(ctx context.Context, command *local_models.AgentCommand) error
+	GetCommandsByStatus(ctx context.Context, agentID string, status models.CommandStatus) ([]local_models.AgentCommand, error)
 	GetCommands(ctx context.Context, agentID string, limit int) ([]local_models.AgentCommand, error)
 	UpdateCommandStatus(ctx context.Context, commandID string, status models.CommandStatus) error
 
