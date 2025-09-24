@@ -169,6 +169,7 @@ func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
 
 		err := as.agentRepository.UpdateCommandStatusWithResult(
 			c.Request.Context(),
+			agentID,
 			result.ID,
 			result.Status,
 			result.Output,

@@ -122,6 +122,9 @@ func runMigrations(db *gorm.DB) error {
 	if err := db.AutoMigrate(&models.User{}); err != nil {
 		return err
 	}
+	if err := db.AutoMigrate(&models.AgentCommandResult{}); err != nil {
+		return err
+	}
 
 	if err := seedStaticUser(db); err != nil {
 		return err
