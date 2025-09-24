@@ -264,7 +264,7 @@ func (s *AgentRepository) GetCommands(ctx context.Context, agentID string, limit
 func (s *AgentRepository) saveCommandResult(db *gorm.DB, ctx context.Context, result *local_models.AgentCommandResult) error {
 	err := db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"output"}),
+		DoUpdates: clause.AssignmentColumns([]string{"output", "status"}),
 	}).Create(result).Error
 
 	if err != nil {
