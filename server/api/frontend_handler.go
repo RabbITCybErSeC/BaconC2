@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
@@ -37,6 +39,33 @@ func (h *FrontendHandler) handleListAgents(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, jsonAgents)
+}
+
+func (h *GeneralApiHandler) handleGetCommandResult(c *gin.Context) {
+	commandID := c.Param("commandId")
+	if commandID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Command ID is required"})
+		return
+	}
+
+	result, err := h.agentRepository.GetCommandResult(c.Request.Context(), commandID)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Command result not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve command result: " + err.Error()})
+		return
+	}
+
+	if outputStr, ok := result.Output.(string); ok && outputStr != "" {
+		var outputData interface{}
+		if err := json.Unmarshal([]byte(outputStr), &outputData); err == nil {
+			result.Output = outputData
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *FrontendHandler) handleGetAgentByID(c *gin.Context) {

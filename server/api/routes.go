@@ -25,11 +25,13 @@ func RegisterFrontendRoutes(frontendHandler *FrontendHandler, config *config.Ser
 }
 
 func RegisterApiRoutes(generalHandler *GeneralApiHandler, config *config.ServerConfig) {
-	frontendAPI := generalHandler.engine.Group("/api/v1/general")
+	generalAPI := generalHandler.engine.Group("/api/v1/general")
 	{
-		frontendAPI.Use(middleware.CorsMiddleware())
+		generalAPI.Use(middleware.CorsMiddleware())
 		//frontendAPI.Use(JWTMiddleware(config))
-		frontendAPI.GET("/queue/command/:id", generalHandler.handleAddCommand)
+		generalAPI.GET("/queue/command/:id", generalHandler.handleAddCommand)
+		generalAPI.GET("/agents/:agentId/commands", generalHandler.handleGetAllAgentCommands)
+		generalAPI.GET("/commands/:commandId/result", generalHandler.handleGetCommandResult)
 	}
 }
 

@@ -307,13 +307,13 @@ func (s *AgentRepository) UpdateCommandStatusWithResult(ctx context.Context, age
 }
 
 func (s *AgentRepository) GetCommandResult(ctx context.Context, commandID string) (*models.CommandResult, error) {
-	var result models.CommandResult
-	err := s.db.WithContext(ctx).Where("command_id = ?", commandID).First(&result).Error
+	var result local_models.AgentCommandResult
+	err := s.db.WithContext(ctx).Where("id = ?", commandID).First(&result).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("could not get result for command %s: %w", commandID, err)
 	}
-	return &result, nil
+	return &result.CommandResult, nil
 }

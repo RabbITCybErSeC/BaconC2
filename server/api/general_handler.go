@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -74,4 +75,36 @@ func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "queued", "id": agentCmd.ID})
+}
+
+func (h *GeneralApiHandler) handleGetAllAgentCommands(c *gin.Context) {
+	agentID := c.Param("agentId")
+	if agentID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Agent ID is required"})
+		return
+	}
+
+	_, err := h.agentRepository.GetAgent(c.Request.Context(), agentID)
+	if err != nil {
+		if errors.Is(err, db.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify agent: " + err.Error()})
+		return
+	}
+
+	// A limit of 0 means get all commands (based on the existing repository implementation).
+	commands, err := h.agentRepository.GetCommands(c.Request.Context(), agentID, 0)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve agent commands: " + err.Error()})
+		return
+	}
+
+	if commands == nil {
+		c.JSON(http.StatusOK, []local_models.AgentCommand{})
+		return
+	}
+
+	c.JSON(http.StatusOK, commands)
 }
