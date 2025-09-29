@@ -11,6 +11,7 @@ import (
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
 )
 
 const (
@@ -45,7 +46,7 @@ func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.
 		return models.CommandResult{
 			ID:     cmd.ID,
 			Status: "error",
-			Output: map[string]string{"error": fmt.Sprintf("Failed to gather extended system info: %v", err)},
+			Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to gather extended system info: %v", err)}),
 		}
 	}
 
@@ -67,14 +68,14 @@ func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.
 	result := models.CommandResult{
 		ID:     cmd.ID,
 		Status: "success",
-		Output: output,
+		Output: formatter.ToJsonString(output),
 	}
 
 	if err := resultsQueue.Add(result); err != nil {
 		return models.CommandResult{
 			ID:     cmd.ID,
 			Status: "error",
-			Output: map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)},
+			Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)}),
 		}
 	}
 
@@ -94,7 +95,7 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, stre
 			resultChan <- models.CommandResult{
 				ID:     cmd.ID,
 				Status: "error",
-				Output: map[string]string{"error": fmt.Sprintf("Failed to start shell: %v", err)},
+				Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to start shell: %v", err)}),
 			}
 		}
 	}()
@@ -109,7 +110,7 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, stre
 				return models.CommandResult{
 					ID:     cmd.ID,
 					Status: "error",
-					Output: map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)},
+					Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)}),
 				}
 			}
 		}
@@ -121,7 +122,7 @@ func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, stre
 		return models.CommandResult{
 			ID:     cmd.ID,
 			Status: "error",
-			Output: map[string]string{"error": "Shell session timeout"},
+			Output: formatter.ToJsonString(map[string]string{"error": "Shell session timeout"}),
 		}
 	}
 }

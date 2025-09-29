@@ -13,6 +13,7 @@ import (
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
 )
 
 type DefaultCommandExecutor struct {
@@ -66,12 +67,12 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 		output = map[string]string{"output": stdout.String()}
 	}
 
-	result.Output = output
+	result.Output = formatter.ToJsonString(output)
 
 	if err := e.resultsQueue.Add(result); err != nil {
 		fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
 		result.Status = "error"
-		result.Output = map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)}
+		result.Output = formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)})
 	}
 
 	return result

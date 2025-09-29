@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -56,13 +55,6 @@ func (h *GeneralApiHandler) handleGetCommandResult(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve command result: " + err.Error()})
 		return
-	}
-
-	if outputStr, ok := result.Output.(string); ok && outputStr != "" {
-		var outputData interface{}
-		if err := json.Unmarshal([]byte(outputStr), &outputData); err == nil {
-			result.Output = outputData
-		}
 	}
 
 	c.JSON(http.StatusOK, result)
