@@ -46,7 +46,7 @@ func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
 		return
 	}
 
-	agentID := c.Query("id")
+	agentID := c.Param("agentId")
 	if agentID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Agent ID required"})
 		return

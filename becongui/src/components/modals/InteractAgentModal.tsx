@@ -85,10 +85,21 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
   const handleSendCommand = async (command: string) => {
     if (!agent) return;
     try {
-      const res = await fetch(`/api/v1/general/queue/command/${agent.id}?cmd=${command}`);
+      const res = await fetch(`/api/v1/general/queue/command/${agent.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command }), // matches RawCommand struct
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to send command: ${res.statusText}`);
+      }
+
       const data = await res.json();
 
-      // append to timeline
+      // update timeline
       setCommands(prev => [
         {
           id: data.id,
@@ -99,7 +110,7 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
         ...prev,
       ]);
 
-      // also show in terminal
+      // update terminal
       setTerminalOutput(prev => [
         ...prev,
         `[>] Sending instruction: ${command}`,
@@ -146,10 +157,9 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as TabOption)}
                   className={`flex items-center px-3 py-2 text-sm rounded-t-lg transition-colors
-                    ${
-                      activeTab === tab.key
-                        ? 'text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40 font-medium'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60'
+                    ${activeTab === tab.key
+                      ? 'text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40 font-medium'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60'
                     }`}
                 >
                   {tab.icon}
