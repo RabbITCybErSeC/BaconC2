@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-// import { X } from 'lucide-react';
 import type { AgentTableEntry } from '../models/Tables';
 import AgentTableRow from './tables/AgentTableRow';
-import InteractAgentSideBar from './modals/InteractAgentModel';
+import InteractAgentSideBar from './modals/InteractAgentModal';
 import InventoryControls from './InventoryControls';
 import ErrorBanner from '../partials/ErrorBanner';
 import { getToken } from '../services/authService';
@@ -39,15 +38,14 @@ const AgentInventory: React.FC = () => {
         }
         const apiData = await response.json();
         
-        // Transform API response (snake_case) to match AgentTableEntry (camelCase)
         const data: AgentTableEntry[] = apiData.map((agent: any) => ({
           id: agent.id,
           hostname: agent.hostname,
           ip: agent.ip,
           os: agent.os,
           protocol: agent.protocol,
-          lastSeen: agent.last_seen, // Map snake_case to camelCase
-          isActive: agent.is_active, // Map snake_case to camelCase
+          lastSeen: agent.last_seen,
+          isActive: agent.is_active,
         }));
         
         setAgents(data);
@@ -55,7 +53,6 @@ const AgentInventory: React.FC = () => {
       } catch (err) {
         setError('Error fetching agents. Please try again later.');
         console.error(err);
-        // Fallback to mock data on error
         setAgents(MOCK_AGENTS);
       }
     };

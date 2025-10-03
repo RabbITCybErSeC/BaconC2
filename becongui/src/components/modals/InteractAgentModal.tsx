@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { type Agent } from '../../models/Agent.tsx';
-import SidebarModal from './SideBarModal.tsx';
-import { Terminal, Info, Zap } from 'lucide-react';
+import { type Agent } from '../../models/Agent';
+import SidebarModal from './SideBarModal';
+import { Terminal, Info, Zap, History } from 'lucide-react';
+import CommandTimeline from '../timeline/CommandTimeLine.tsx';
+import type { CommandEntry } from '../timeline/CommandTimeLine.tsx';
+import CommandInput from '../common/CommandInput.tsx';
 
 interface InteractAgentSideBarProps {
   isOpen: boolean;
@@ -9,16 +12,18 @@ interface InteractAgentSideBarProps {
   agent: Agent | null;
 }
 
-type TabOption = 'terminal' | 'extended' | 'actions';
+type TabOption = 'terminal' | 'timeline' | 'extended' | 'actions';
 
 const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
   isOpen,
   onClose,
   agent,
 }) => {
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabOption>('terminal');
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
+  const [commands, setCommands] = useState<CommandEntry[]>([]);
 
+  // reset when agent changes
   useEffect(() => {
     if (agent) {
       setTerminalOutput(['[+] Connected to agent...', '[+] Awaiting instructions...']);
@@ -28,12 +33,81 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
     }
   }, [agent]);
 
-  const handleDummyInstruction = () => {
-    setTerminalOutput((prev) => [
-      ...prev,
-      '[>] Sending instruction: Dump Credentials',
-      '[+] Response: credentials dumped (dummy)',
-    ]);
+  // fetch commands when agent changes
+  useEffect(() => {
+    if (!agent) return;
+    const fetchCommands = async () => {
+      try {
+        const res = await fetch(`/api/v1/general/agents/${agent.id}/commands`);
+        const data = await res.json();
+        setCommands(
+          data.map((cmd: any) => ({
+            id: cmd.id,
+            command: cmd.command,
+            status: cmd.status,
+            createdAt: cmd.created_at,
+          }))
+        );
+      } catch (err) {
+        console.error('Error fetching commands', err);
+      }
+    };
+    fetchCommands();
+  }, [agent]);
+
+  // poll results for in-progress commands
+  useEffect(() => {
+    if (!agent) return;
+
+    const interval = setInterval(async () => {
+      for (const cmd of commands) {
+        if (cmd.status !== 'completed' && cmd.status !== 'failed') {
+          try {
+            const res = await fetch(`/api/v1/general/commands/${cmd.id}/result`);
+            const data = await res.json();
+            setCommands(prev =>
+              prev.map(c =>
+                c.id === cmd.id
+                  ? { ...c, status: data.status, result: data.output }
+                  : c
+              )
+            );
+          } catch (err) {
+            console.error('Error fetching command result', err);
+          }
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [commands, agent]);
+
+  const handleSendCommand = async (command: string) => {
+    if (!agent) return;
+    try {
+      const res = await fetch(`/api/v1/general/queue/command/${agent.id}?cmd=${command}`);
+      const data = await res.json();
+
+      // append to timeline
+      setCommands(prev => [
+        {
+          id: data.id,
+          command,
+          status: data.status,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+
+      // also show in terminal
+      setTerminalOutput(prev => [
+        ...prev,
+        `[>] Sending instruction: ${command}`,
+        `[+] Awaiting response...`,
+      ]);
+    } catch (err) {
+      console.error('Error sending command', err);
+    }
   };
 
   return (
@@ -50,24 +124,12 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
               General Info
             </h3>
             <div className="text-gray-800 dark:text-gray-200 text-sm space-y-1">
-              <p>
-                <strong>Hostname:</strong> {agent.hostname}
-              </p>
-              <p>
-                <strong>IP Address:</strong> {agent.ip}
-              </p>
-              <p>
-                <strong>OS:</strong> {agent.os}
-              </p>
-              <p>
-                <strong>Protocol:</strong> {agent.protocol}
-              </p>
-              <p>
-                <strong>Status:</strong> {agent.isActive ? 'Active' : 'Inactive'}
-              </p>
-              <p>
-                <strong>Last Seen:</strong> {new Date(agent.lastSeen).toLocaleString()}
-              </p>
+              <p><strong>Hostname:</strong> {agent.hostname}</p>
+              <p><strong>IP Address:</strong> {agent.ip}</p>
+              <p><strong>OS:</strong> {agent.os}</p>
+              <p><strong>Protocol:</strong> {agent.protocol}</p>
+              <p><strong>Status:</strong> {agent.isActive ? 'Active' : 'Inactive'}</p>
+              <p><strong>Last Seen:</strong> {new Date(agent.lastSeen).toLocaleString()}</p>
             </div>
           </div>
 
@@ -76,9 +138,10 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
             <div className="flex border-b border-gray-200 dark:border-gray-700">
               {[
                 { key: 'terminal', label: 'Terminal', icon: <Terminal className="w-4 h-4 mr-2" /> },
+                { key: 'timeline', label: 'Timeline', icon: <History className="w-4 h-4 mr-2" /> },
                 { key: 'extended', label: 'Extended Info', icon: <Info className="w-4 h-4 mr-2" /> },
                 { key: 'actions', label: 'Actions', icon: <Zap className="w-4 h-4 mr-2" /> },
-              ].map((tab) => (
+              ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as TabOption)}
@@ -109,6 +172,16 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
                 </div>
               )}
 
+              {activeTab === 'timeline' && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                    Command Timeline
+                  </h3>
+                  <CommandTimeline commands={commands} />
+                  <CommandInput onSend={handleSendCommand} />
+                </div>
+              )}
+
               {activeTab === 'extended' && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
@@ -123,14 +196,14 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
               {activeTab === 'actions' && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                    Actions
+                    Quick Actions
                   </h3>
                   <button
                     type="button"
-                    onClick={handleDummyInstruction}
+                    onClick={() => handleSendCommand('whoami')}
                     className="w-full bg-violet-600 text-white py-2.5 px-5 rounded-lg hover:bg-violet-700 focus:ring-4 focus:outline-none focus:ring-violet-300 font-medium text-sm text-center dark:bg-violet-500 dark:hover:bg-violet-600 dark:focus:ring-violet-800"
                   >
-                    Dump Credentials (Dummy)
+                    Run whoami
                   </button>
                 </div>
               )}
