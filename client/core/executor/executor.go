@@ -37,44 +37,69 @@ func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], results
 }
 
 func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResult {
-	// Check for built-in commands
-	if handler, exists := e.commandRegistry.GetHandler(cmd.Command); exists {
-		return handler(cmd)
+	if cmd.Type == models.CommandTypeInternal {
+		if handler, exists := e.commandRegistry.GetHandler(cmd.Command); exists {
+			return handler(cmd)
+		}
+
+		result := models.CommandResult{
+			ID:     cmd.ID,
+			Status: models.CommandStatusFailed,
+			Output: formatter.ToJsonString(map[string]string{"error": "Internal command handler not found"}),
+		}
+		if err := e.resultsQueue.Add(result); err != nil {
+			fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
+		}
+		return result
+	}
+
+	if cmd.Type == models.CommandTypeShell {
+		result := models.CommandResult{
+			ID: cmd.ID,
+		}
+
+		var execCmd *exec.Cmd
+		if isWindows() {
+			execCmd = exec.Command("cmd", "/C", cmd.Command)
+		} else {
+			execCmd = exec.Command("sh", "-c", cmd.Command)
+		}
+
+		var stdout, stderr bytes.Buffer
+		execCmd.Stdout = &stdout
+		execCmd.Stderr = &stderr
+
+		err := execCmd.Run()
+		var output interface{}
+		if err != nil {
+			result.Status = models.CommandStatusFailed
+			output = map[string]string{"error": stderr.String()}
+		} else {
+			result.Status = models.CommandStatusCompleted
+			output = map[string]string{"output": stdout.String()}
+		}
+
+		result.Output = formatter.ToJsonString(output)
+
+		if err := e.resultsQueue.Add(result); err != nil {
+			fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
+			result.Status = "error"
+			result.Output = formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)})
+		}
+		return result
 	}
 
 	result := models.CommandResult{
-		ID: cmd.ID,
+		ID:     cmd.ID,
+		Status: models.CommandStatusFailed,
+		Output: formatter.ToJsonString(map[string]string{
+			"error": fmt.Sprintf("Unsupported command type: '%s'", cmd.Type),
+		}),
 	}
-
-	var execCmd *exec.Cmd
-	if isWindows() {
-		execCmd = exec.Command("cmd", "/C", cmd.Command)
-	} else {
-		execCmd = exec.Command("sh", "-c", cmd.Command)
-	}
-
-	var stdout, stderr bytes.Buffer
-	execCmd.Stdout = &stdout
-	execCmd.Stderr = &stderr
-
-	err := execCmd.Run()
-	var output interface{}
-	if err != nil {
-		result.Status = models.CommandStatusFailed
-		output = map[string]string{"error": stderr.String()}
-	} else {
-		result.Status = models.CommandStatusCompleted
-		output = map[string]string{"output": stdout.String()}
-	}
-
-	result.Output = formatter.ToJsonString(output)
 
 	if err := e.resultsQueue.Add(result); err != nil {
 		fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
-		result.Status = "error"
-		result.Output = formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)})
 	}
-
 	return result
 }
 

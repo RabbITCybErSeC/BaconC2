@@ -1,6 +1,12 @@
 package models
 
 type CommandStatus string
+type CommandType string
+
+const (
+	CommandTypeInternal CommandType = "intern"
+	CommandTypeShell    CommandType = "shell"
+)
 
 const (
 	CommandStatusPending            CommandStatus = "pending"
@@ -23,12 +29,14 @@ type WebSocketMessage struct {
 }
 
 type RawCommand struct {
-	Command string `json:"command"`
+	Type    CommandType `json:"type"`
+	Command string      `json:"command"`
 }
 
 type Command struct {
 	ID      string        `json:"id" gorm:"primaryKey"`
 	Command string        `json:"command"`
+	Type    CommandType   `json:"type"`
 	Status  CommandStatus `json:"status"`
 }
 
