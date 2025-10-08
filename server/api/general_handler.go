@@ -45,6 +45,10 @@ func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Command field is required and cannot be empty"})
 		return
 	}
+	if rawCmd.Type == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Field 'type' is required and cannot be empty"})
+		return
+	}
 
 	agentID := c.Param("agentId")
 	if agentID == "" {
@@ -63,6 +67,7 @@ func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
 		Command: models.Command{
 			ID:      uuid.New().String(),
 			Command: rawCmd.Command,
+			Type:    rawCmd.Type,
 			Status:  models.CommandStatusPending,
 		},
 		CreatedAt: time.Now(),

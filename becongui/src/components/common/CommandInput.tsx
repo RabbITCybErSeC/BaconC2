@@ -2,20 +2,29 @@ import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 
 interface CommandInputProps {
-  onSend: (command: string) => void;
+  onSend: (command: string, type?: string) => void;
 }
 
 const CommandInput: React.FC<CommandInputProps> = ({ onSend }) => {
   const [input, setInput] = useState('');
+  const [type, setType] = useState('shell');
 
   const handleSend = () => {
     if (!input.trim()) return;
-    onSend(input.trim());
+    onSend(input.trim(), type);
     setInput('');
   };
 
   return (
     <div className="flex items-center space-x-2 mt-3">
+      <select
+        value={type}
+        onChange={e => setType(e.target.value)}
+        className="px-2 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+      >
+        <option value="shell">Shell</option>
+        <option value="intern">Internal</option>
+      </select>
       <input
         type="text"
         value={input}

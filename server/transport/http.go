@@ -86,6 +86,7 @@ func (as *HTTPServerTransport) handleRegister(c *gin.Context) {
 // handleBeacon handles agent beaconing
 func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
 	agentID := c.Query("id")
+
 	if agentID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Agent ID required"})
 		return
