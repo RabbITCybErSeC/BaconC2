@@ -3,28 +3,23 @@ package api
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
-	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 // AgentHandler handles agent-related operations
 type GeneralApiHandler struct {
 	agentRepository db.IAgentRepository
-	commandQueue    queue.IServerCommandQueue
 	engine          *gin.Engine
 }
 
 // NewAgentHandler initializes a new AgentHandler
-func NewGeneralApiHandler(agentRepository db.IAgentRepository, commandQueue queue.IServerCommandQueue, engine *gin.Engine) *GeneralApiHandler {
+func NewGeneralApiHandler(agentRepository db.IAgentRepository, engine *gin.Engine) *GeneralApiHandler {
 	return &GeneralApiHandler{
 		agentRepository: agentRepository,
-		commandQueue:    commandQueue,
 		engine:          engine,
 	}
 }
@@ -36,15 +31,18 @@ func (h *GeneralApiHandler) GinEngine() *gin.Engine {
 
 // handleAddCommand handles adding a new command for an agent
 func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
+
 	var rawCmd models.RawCommand
 	if err := c.ShouldBindJSON(&rawCmd); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
 		return
 	}
+
 	if rawCmd.Command == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Command field is required and cannot be empty"})
 		return
 	}
+
 	if rawCmd.Type == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Field 'type' is required and cannot be empty"})
 		return
@@ -62,24 +60,15 @@ func (h *GeneralApiHandler) handleAddCommand(c *gin.Context) {
 		return
 	}
 
-	agentCmd := local_models.AgentCommand{
-		AgentID: agentID,
-		Command: models.Command{
-			ID:      uuid.New().String(),
-			Command: rawCmd.Command,
-			Type:    rawCmd.Type,
-			Status:  models.CommandStatusPending,
-		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
+	cmd := models.NewCommand(rawCmd.Command, rawCmd.Type)
+	agentCmdPtr := local_models.NewAgentCommand(agentID, *cmd)
 
-	if err := h.agentRepository.SaveCommand(c.Request.Context(), &agentCmd); err != nil {
+	if err := h.agentRepository.SaveCommand(c.Request.Context(), agentCmdPtr); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "queued", "id": agentCmd.ID})
+	c.JSON(http.StatusOK, gin.H{"status": "queued", "id": agentCmdPtr.ID})
 }
 
 func (h *GeneralApiHandler) handleGetAllAgentCommands(c *gin.Context) {

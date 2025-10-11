@@ -43,3 +43,48 @@ type AgentSession struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 }
+
+func NewAgentCommand(agentID string, cmd models.Command) *AgentCommand {
+	now := time.Now()
+	return &AgentCommand{
+		AgentID:   agentID,
+		Command:   cmd,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+func NewAgentCommandResult(agentID string, result models.CommandResult) *AgentCommandResult {
+	now := time.Now()
+	return &AgentCommandResult{
+		AgentID:       agentID,
+		CommandResult: result,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+}
+
+func NewServerAgentModel(agent models.Agent) *ServerAgentModel {
+	return &ServerAgentModel{
+		Agent:    agent,
+		LastSeen: time.Now(),
+		IsActive: true,
+		Commands: make([]AgentCommand, 0),
+		Sessions: make([]AgentSession, 0),
+	}
+}
+
+func NewAgentSession(agentID, sessionID, ipAddress, userAgent string) *AgentSession {
+	now := time.Now()
+	return &AgentSession{
+		AgentID:   agentID,
+		SessionID: sessionID,
+		StartTime: now,
+		EndTime:   nil,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		IsActive:  true,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}

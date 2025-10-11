@@ -1,5 +1,7 @@
 package models
 
+import "github.com/google/uuid"
+
 type CommandStatus string
 type CommandType string
 
@@ -49,4 +51,36 @@ type CommandResult struct {
 type ICommandExecutor interface {
 	Execute(cmd Command) CommandResult
 	ProcessCommandQueue()
+}
+
+func NewWebSocketMessage(msgType, data, id string) *WebSocketMessage {
+	return &WebSocketMessage{
+		Type: msgType,
+		Data: data,
+		ID:   id,
+	}
+}
+
+func NewRawCommand(cmdType CommandType, command string) *RawCommand {
+	return &RawCommand{
+		Type:    cmdType,
+		Command: command,
+	}
+}
+
+func NewCommand(command string, cmdType CommandType) *Command {
+	return &Command{
+		ID:      uuid.New().String(),
+		Command: command,
+		Type:    cmdType,
+		Status:  CommandStatusPending,
+	}
+}
+
+func NewCommandResult(commandID string, status CommandStatus, output string) *CommandResult {
+	return &CommandResult{
+		ID:     commandID,
+		Status: status,
+		Output: output,
+	}
 }

@@ -39,11 +39,13 @@ func main() {
 
 	ginEngine := gin.Default()
 	frontendHandler := api.NewFrontendHandler(agentRepo, ginEngine)
-	generalHandler := api.NewGeneralApiHandler(agentRepo, commandQueue, ginEngine)
+	generalHandler := api.NewGeneralApiHandler(agentRepo, ginEngine)
+
 	api.RegisterFrontendRoutes(frontendHandler, cfg)
 	api.RegisterApiRoutes(generalHandler, cfg)
 	api.RegisterAuthRoutes(ginEngine, cfg, userRepo)
 	api.StaticHandler(ginEngine)
+
 	frontendServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.FrontHTTPConfig.Port),
 		Handler: ginEngine,
