@@ -4,6 +4,8 @@
 
 Bacon is a small C2 framework, which aims to support stealthy communication techniques.
 
+> **Development status:** This project is currently in **active development**. There is **no beta release yet** — features, interfaces, and behavior may change as the project evolves.
+
 **Note:** This repository is intended as a learning and research platform. Use responsibly and only on systems where you have explicit permission to test.
 
 ## Why?
