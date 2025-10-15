@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -83,14 +85,19 @@ func main() {
 
 func generateAgentID() string {
 	platform := runtime.GOOS
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return fmt.Sprintf("%s-%s", platform, uuid.New().String())
-	}
-	for _, i := range interfaces {
-		if len(i.HardwareAddr) > 0 {
-			return fmt.Sprintf("%s-%s", platform, i.HardwareAddr.String())
+
+	ifaces, err := net.Interfaces()
+	if err == nil {
+		for _, iface := range ifaces {
+			mac := iface.HardwareAddr
+			if len(mac) == 0 {
+				continue
+			}
+			sum := sha256.Sum256(mac)
+			hashedMAC := hex.EncodeToString(sum[:8])
+			return fmt.Sprintf("%s-%s", platform, hashedMAC)
 		}
 	}
+
 	return fmt.Sprintf("%s-%s", platform, uuid.New().String())
 }

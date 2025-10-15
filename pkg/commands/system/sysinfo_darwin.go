@@ -1,4 +1,6 @@
-package sysinfo
+//go:build darwin
+
+package system
 
 import (
 	"net"
@@ -14,62 +16,33 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 )
 
-type MinimalSysInfo struct {
-	Hostname string
-	IP       string
-	OS       string
-	Protocol string
-}
-
-type ExtendedSysInfo struct {
-	NetworkInterfaces []models.NetworkInterface
-	Architecture      string
-	CPUInfo           string
-	MemoryTotal       uint64
-	MemoryFree        uint64
-	DiskTotal         uint64
-	DiskFree          uint64
-	Uptime            uint64
-	ProcessCount      int
-	Username          string
-	Domain            string
-	LastBootTime      string
-}
-
 func GatherMinimalInfo(protocol string) (MinimalSysInfo, error) {
 	info := MinimalSysInfo{Protocol: protocol}
 
-	// Hostname
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "unknown"
 	}
 	info.Hostname = hostname
 
-	// Primary IP
 	info.IP = getOutboundIP()
 
-	// OS
 	info.OS = runtime.GOOS
 
 	return info, nil
 }
 
-// GatherExtendedInfo collects extended system information
 func GatherExtendedInfo() (ExtendedSysInfo, error) {
 	info := ExtendedSysInfo{}
 
-	// Network interfaces
 	interfaces, err := getNetworkInterfaces()
 	if err != nil {
 		interfaces = []models.NetworkInterface{}
 	}
 	info.NetworkInterfaces = interfaces
 
-	// Architecture
 	info.Architecture = runtime.GOARCH
 
-	// CPU info
 	cpuInfo, err := cpu.Info()
 	if err == nil && len(cpuInfo) > 0 {
 		info.CPUInfo = cpuInfo[0].ModelName
@@ -77,14 +50,13 @@ func GatherExtendedInfo() (ExtendedSysInfo, error) {
 		info.CPUInfo = "unknown"
 	}
 
-	// Memory info
 	memInfo, err := mem.VirtualMemory()
 	if err == nil {
 		info.MemoryTotal = memInfo.Total
 		info.MemoryFree = memInfo.Free
 	}
 
-	// Disk info
+	// Disk info (macOS-specific: use root filesystem)
 	diskInfo, err := disk.Usage("/")
 	if err == nil {
 		info.DiskTotal = diskInfo.Total
@@ -105,19 +77,13 @@ func GatherExtendedInfo() (ExtendedSysInfo, error) {
 		info.ProcessCount = len(processes)
 	}
 
-	// Username
 	info.Username = os.Getenv("USER")
-	if info.Username == "" {
-		info.Username = os.Getenv("USERNAME")
-	}
 	if info.Username == "" {
 		info.Username = "unknown"
 	}
 
-	// Domain (Windows-specific)
-	if runtime.GOOS == "windows" {
-		info.Domain = os.Getenv("USERDOMAIN")
-	}
+	// Domain (not typically used in macOS)
+	info.Domain = ""
 
 	return info, nil
 }
@@ -147,8 +113,8 @@ func getNetworkInterfaces() ([]models.NetworkInterface, error) {
 			Name:    iface.Name,
 			MAC:     iface.HardwareAddr.String(),
 			IPs:     ips,
-			Netmask: "", // TODO: Implement platform-specific netmask retrieval
-			Gateway: "", // TODO: Implement platform-specific gateway retrieval
+			Netmask: "", // TODO: Implement macOS-specific netmask retrieval
+			Gateway: "", // TODO: Implement macOS-specific gateway retrieval
 			IsUp:    iface.Flags&net.FlagUp != 0,
 		})
 	}

