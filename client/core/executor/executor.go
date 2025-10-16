@@ -72,18 +72,18 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 		var output interface{}
 		if err != nil {
 			result.Status = models.CommandStatusFailed
-			output = map[string]string{"error": stderr.String()}
+			output = stderr.String()
 		} else {
 			result.Status = models.CommandStatusCompleted
-			output = map[string]string{"output": stdout.String()}
+			output = stdout.String()
 		}
 
 		result.Output = formatter.ToJsonString(output)
 
 		if err := e.resultsQueue.Add(result); err != nil {
 			fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
-			result.Status = "error"
-			result.Output = formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to queue result: %v", err)})
+			result.Status = models.CommandStatusFailed
+			result.Output = fmt.Sprintf("Failed to queue result: %v", err)
 		}
 		return result
 	}
@@ -91,9 +91,7 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 	result := models.CommandResult{
 		ID:     cmd.ID,
 		Status: models.CommandStatusFailed,
-		Output: formatter.ToJsonString(map[string]string{
-			"error": fmt.Sprintf("Unsupported command type: '%s'", cmd.Type),
-		}),
+		Output: fmt.Sprintf("Unsupported command type: '%s'", cmd.Type),
 	}
 
 	if err := e.resultsQueue.Add(result); err != nil {

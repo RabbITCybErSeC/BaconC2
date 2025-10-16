@@ -1,4 +1,5 @@
-//go:build windows
+//go:build windows && system_info
+// +build windows,system_info
 
 package system
 

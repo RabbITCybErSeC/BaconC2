@@ -136,32 +136,49 @@ func (t *UDPTransport) sendBeacon() error {
 	return nil
 }
 
-func (t *UDPTransport) SendResults() error {
+func (t *UDPTransport) SendResults(cmd models.Command) models.CommandResult {
 	results, err := t.resultQueue.List()
 	if err != nil {
-		return fmt.Errorf("failed to get results from queue: %w", err)
+		return models.CommandResult{
+			Status: models.CommandStatusFailed,
+			Output: fmt.Sprintf("failed to get results from queue: %v", err),
+		}
 	}
 
 	if len(results) == 0 {
-		return nil
+		return models.CommandResult{}
 	}
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	if t.conn == nil {
-		return fmt.Errorf("UDP connection not initialized")
+		return models.CommandResult{
+			Status: models.CommandStatusFailed,
+			Output: "UDP connection not initialized",
+		}
 	}
 
-	for _, result := range results {
+	var firstResult models.CommandResult
+	for i, result := range results {
 		jsonData, err := json.Marshal(result)
 		if err != nil {
-			return fmt.Errorf("failed to marshal result: %w", err)
+			return models.CommandResult{
+				Status: models.CommandStatusFailed,
+				Output: fmt.Sprintf("failed to marshal result: %v", err),
+			}
 		}
 
 		_, err = t.conn.Write(jsonData)
 		if err != nil {
-			return fmt.Errorf("UDP result send error: %w", err)
+			return models.CommandResult{
+				Status: models.CommandStatusFailed,
+				Output: fmt.Sprintf("UDP result send error: %v", err),
+			}
+		}
+
+		if i == 0 {
+			firstResult = result
 		}
 	}
 
@@ -169,13 +186,15 @@ func (t *UDPTransport) SendResults() error {
 	for i := 0; i < len(results); i++ {
 		_, err := t.resultQueue.RemoveFirst()
 		if err != nil {
-			return fmt.Errorf("failed to clear result queue: %w", err)
+			return models.CommandResult{
+				Status: models.CommandStatusFailed,
+				Output: fmt.Sprintf("failed to clear result queue: %v", err),
+			}
 		}
 	}
 
-	return nil
+	return firstResult
 }
-
 func (t *UDPTransport) beaconLoop() {
 	ticker := time.NewTicker(t.beaconInterval)
 	defer ticker.Stop()

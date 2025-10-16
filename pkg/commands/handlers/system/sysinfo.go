@@ -1,3 +1,6 @@
+//go:build system_info
+// +build system_info
+
 package system
 
 import (
@@ -9,7 +12,7 @@ import (
 )
 
 func init() {
-	handler.NewCommandHandlerRegistry().RegisterHandler(*NewGetInfoCommandHandler())
+	handler.NewCommandHandlerRegistry().RegisterHandler(*NewGetExtendedInfoCommandHandler())
 }
 
 type MinimalSysInfo struct {
@@ -34,15 +37,22 @@ type ExtendedSysInfo struct {
 	LastBootTime      string
 }
 
-func NewGetInfoCommandHandler() *handler.CommandHandler {
+func NewGetExtendedInfoCommandHandler() *handler.CommandHandler {
 	return &handler.CommandHandler{
-		Name:    "sys_info",
-		Handler: GetInfoHandler,
+		Name:    "sys_extended_info",
+		Handler: GetExtendedInfoHandler,
 	}
 }
 
-// GetInfoHandler processes the sys_info command
-func GetInfoHandler(cmd models.Command) models.CommandResult {
+// func NewGetMinimalInfoCommandHandler() *handler.CommandHandler {
+// 	return &handler.CommandHandler{
+// 		Name:    "sys_minimal_minimal",
+// 		Handler: GetInfoHaGetExtendedInfoHandlerndler,
+// 	}
+// }
+
+// GetInfoHandler processes t	he sys_info command
+func GetExtendedInfoHandler(cmd models.Command) models.CommandResult {
 	sysInfo, err := GatherExtendedInfo()
 	if err != nil {
 		return models.CommandResult{

@@ -11,13 +11,13 @@ const (
 )
 
 const (
-	CommandStatusPending            CommandStatus = "pending"
-	CommandStatusRunning            CommandStatus = "running"
-	CommandStatusCompleted          CommandStatus = "completed"
-	CommandStatusFailed             CommandStatus = "failed"
-	CommandStatusCancelled          CommandStatus = "cancelled"
-	CommandStatusTimeout            CommandStatus = "timeout"
-	CommandStatusAck                CommandStatus = "ack"
+	CommandStatusPending            CommandStatus = "cs_pndg"
+	CommandStatusRunning            CommandStatus = "cs_rng"
+	CommandStatusCompleted          CommandStatus = "cs_cmpltd"
+	CommandStatusFailed             CommandStatus = "cs_fld"
+	CommandStatusCancelled          CommandStatus = "cs_clld"
+	CommandStatusTimeout            CommandStatus = "cs_tmt"
+	CommandStatusAck                CommandStatus = "cs_ack"
 	CommandStatusSentToClient       CommandStatus = "c_sent"
 	CommandStatusSentToServer       CommandStatus = "s_sent"
 	CommandStatusReceivedFromClient CommandStatus = "c_received"

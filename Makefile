@@ -5,15 +5,15 @@ SERV_SRC_DIR = ./server
 CLIENT_SRC_DIR = ./client
 FRONT_END_DIR = ./becongui
 BIN_DIR = ./bin
+BUILD_CONFIG = build.json
 
-# Supported platforms and architectures
-PLATFORMS = linux windows darwin
+PLATFORMS = darwin linux windows
 ARCHS = amd64 arm64
 TARGET_OS ?= darwin
 TARGET_ARCH ?= arm64
 TARGET = $(TARGET_OS)-$(TARGET_ARCH)
+GET_TAGS = $(shell jq -r '.components[] | select(.enabled) | .build_tag' $(BUILD_CONFIG) | tr '\n' ' ')
 
-# Validate TARGET_OS and TARGET_ARCH
 VALID_OS := $(filter $(TARGET_OS),$(PLATFORMS))
 VALID_ARCH := $(filter $(TARGET_ARCH),$(ARCHS))
 ifneq ($(VALID_OS),$(TARGET_OS))
@@ -27,18 +27,18 @@ endif
 LDFLAGS = -s -w
 SERVER_TAGS = go_sqlite,server,$(TARGET_OS)
 CLIENT_TAGS = $(TARGET_OS)
-SERVER_BUILD_FLAGS = -trimpath -tags "$(SERVER_TAGS)" -ldflags "$(LDFLAGS)"
-CLIENT_BUILD_FLAGS = -trimpath -tags "$(CLIENT_TAGS)" -ldflags "$(LDFLAGS)"
 
+SERVER_BUILD_FLAGS = -trimpath -tags "$(SERVER_TAGS)" -ldflags "$(LDFLAGS)"
+CLIENT_BUILD_FLAGS = -trimpath -tags "$(CLIENT_TAGS) $(GET_TAGS)" -ldflags "$(LDFLAGS)"
 
 SERVER_OUTPUT = $(BIN_DIR)/$(BINARY_NAME)_$(TARGET)
 CLIENT_OUTPUT = $(BIN_DIR)/$(CLIENT_BINARY_NAME)_$(TARGET)
 
-.PHONY: all all-platforms clean compile-server compile-client run-server run-client build-front-end
+.PHONY: all all-platforms clean compile-server compile-client run-server run-client build-front-end show-modules
 
 all: compile-server compile-client
 
-all-platforms:
+all-platforms: build-front-end
 	@echo "Building for all platforms..."
 	@for os in $(PLATFORMS); do \
 		for arch in $(ARCHS); do \
@@ -71,6 +71,12 @@ run-server: build-front-end
 run-client:
 	@echo "Running client..."
 	@cd $(CLIENT_SRC_DIR) && $(GO) run -tags "$(CLIENT_TAGS)" .
+
+show-modules:
+	@echo "\n Enabled commands modules:"
+	@echo 
+	@jq -r '.components[] | select(.enabled) | "- " + .name + " (tag: " + .build_tag + ")"' $(BUILD_CONFIG)
+	@echo 
 
 clean:
 	@echo "Cleaning up..."

@@ -108,41 +108,60 @@ func (t *HTTPClientTransport) sendBeacon() error {
 	return nil
 }
 
-func (t *HTTPClientTransport) SendResults() error {
+func (t *HTTPClientTransport) SendResults(cmd models.Command) models.CommandResult {
 	results, err := t.resultQueue.List()
 	if err != nil {
-		return fmt.Errorf("failed to get results from queue: %w", err)
+		return models.CommandResult{
+			Status: models.CommandStatusFailed,
+			Output: fmt.Sprintf("failed to get results from queue: %v", err),
+		}
 	}
 
 	if len(results) == 0 {
-		return nil
+		return models.CommandResult{}
 	}
 
 	jsonData, err := json.Marshal(results)
 	if err != nil {
-		return fmt.Errorf("failed to marshal results: %w", err)
+		return models.CommandResult{
+			Status: models.CommandStatusFailed,
+			Output: fmt.Sprintf("failed to marshal results: %v", err),
+		}
 	}
 
 	url := fmt.Sprintf(resultsAPIPath, t.serverURL, t.agentID)
 	resp, err := t.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return fmt.Errorf("HTTP batch result send error: %w", err)
+		return models.CommandResult{
+			Status: models.CommandStatusFailed,
+			Output: fmt.Sprintf("HTTP batch result send error: %v", err),
+		}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("batch result send failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	for i := 0; i < len(results); i++ {
-		_, err := t.resultQueue.RemoveFirst()
-		if err != nil {
-			return fmt.Errorf("failed to clear result queue: %w", err)
+		return models.CommandResult{
+			Status: models.CommandStatusFailed,
+			Output: fmt.Sprintf("batch result send failed with status %d: %s", resp.StatusCode, string(body)),
 		}
 	}
 
-	return nil
+	var firstResult models.CommandResult
+	for i := 0; i < len(results); i++ {
+		result, err := t.resultQueue.RemoveFirst()
+		if err != nil {
+			return models.CommandResult{
+				Status: models.CommandStatusFailed,
+				Output: fmt.Sprintf("failed to clear result queue: %v", err),
+			}
+		}
+		if i == 0 {
+			firstResult = result
+		}
+	}
+
+	return firstResult
 }
 
 func (t *HTTPClientTransport) beaconLoop() {

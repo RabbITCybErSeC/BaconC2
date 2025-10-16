@@ -1,4 +1,5 @@
-//go:build darwin
+//go:build darwin && system_info
+// +build darwin,system_info
 
 package system
 

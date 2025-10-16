@@ -87,7 +87,6 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
     return () => clearInterval(interval);
   }, [commands, agent]);
 
-  // ✅ Updated: Sends full RawCommand { command, type }
   const handleSendCommand = async (command: string, type: string = "shell") => {
     if (!agent) return;
     try {
@@ -224,7 +223,7 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
                     Command Timeline
                   </h3>
                   <CommandTimeline commands={commands} />
-                  {/* ✅ Command input with type selector */}
+
                   <CommandInput onSend={handleSendCommand} />
                 </div>
               )}

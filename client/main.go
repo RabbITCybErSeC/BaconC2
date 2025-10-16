@@ -59,7 +59,14 @@ func main() {
 
 	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
 
-	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, command_handler.CommandRegistry)
+	commandRegistry := command_handler.GetGlobalCommandRegistry()
+
+	commandRegistry.RegisterHandler(command_handler.CommandHandler{
+		Name:    "return_results",
+		Handler: transportProtocol.SendResults,
+	})
+
+	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, commandRegistry)
 
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 

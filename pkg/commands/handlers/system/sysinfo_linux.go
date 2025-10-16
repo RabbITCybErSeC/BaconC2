@@ -1,4 +1,5 @@
-//go:build linux
+//go:build linux && system_info
+// +build linux,system_info
 
 package system
 

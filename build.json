@@ -1,0 +1,5 @@
+{
+  "components": [
+    {"name": "system_info_handler", "build_tag": "system_info", "enabled": true}
+  ]
+}
