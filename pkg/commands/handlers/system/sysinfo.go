@@ -3,10 +3,14 @@ package system
 import (
 	"fmt"
 
-	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands"
+	handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
 )
+
+func init() {
+	handler.NewCommandHandlerRegistry().RegisterHandler(*NewGetInfoCommandHandler())
+}
 
 type MinimalSysInfo struct {
 	Hostname string
@@ -30,8 +34,8 @@ type ExtendedSysInfo struct {
 	LastBootTime      string
 }
 
-func NewGetInfoCommandHandler() *command_handler.CommandHandler {
-	return &command_handler.CommandHandler{
+func NewGetInfoCommandHandler() *handler.CommandHandler {
+	return &handler.CommandHandler{
 		Name:    "sys_info",
 		Handler: GetInfoHandler,
 	}

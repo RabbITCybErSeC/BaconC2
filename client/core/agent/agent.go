@@ -5,7 +5,7 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
-	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/system"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers/system"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )

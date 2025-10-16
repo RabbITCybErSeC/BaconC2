@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
-	registry "github.com/RabbITCybErSeC/BaconC2/client/core/command_registry"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
-	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands"
+	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
@@ -25,9 +24,8 @@ type DefaultCommandExecutor struct {
 	commandRegistry *command_handler.CommandHandlerRegistry
 }
 
-func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], resultsQueue queue.GenericQueue[models.CommandResult], transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport, cfg *config.AgentConfig) models.ICommandExecutor {
-	cmdRegistry := command_handler.NewCommandHandlerRegistry()
-	registry.RegisterBuiltInCommands(cmdRegistry, resultsQueue, transport, streamingTransport)
+func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], resultsQueue queue.GenericQueue[models.CommandResult], transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport, cfg *config.AgentConfig, cmdRegistry *command_handler.CommandHandlerRegistry) models.ICommandExecutor {
+
 	return &DefaultCommandExecutor{
 		queue:           queue,
 		resultsQueue:    resultsQueue,

