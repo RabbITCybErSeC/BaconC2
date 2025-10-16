@@ -1,10 +1,7 @@
 package executor
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
-	"runtime"
 	"time"
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
@@ -25,7 +22,6 @@ type DefaultCommandExecutor struct {
 }
 
 func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], resultsQueue queue.GenericQueue[models.CommandResult], transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport, cfg *config.AgentConfig, cmdRegistry *command_handler.CommandHandlerRegistry) models.ICommandExecutor {
-
 	return &DefaultCommandExecutor{
 		queue:           queue,
 		resultsQueue:    resultsQueue,
@@ -53,33 +49,7 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 	}
 
 	if cmd.Type == models.CommandTypeShell {
-		result := models.CommandResult{
-			ID: cmd.ID,
-		}
-
-		var execCmd *exec.Cmd
-		if isWindows() {
-			execCmd = exec.Command("cmd", "/C", cmd.Command)
-		} else {
-			execCmd = exec.Command("sh", "-c", cmd.Command)
-		}
-
-		var stdout, stderr bytes.Buffer
-		execCmd.Stdout = &stdout
-		execCmd.Stderr = &stderr
-
-		err := execCmd.Run()
-		var output interface{}
-		if err != nil {
-			result.Status = models.CommandStatusFailed
-			output = stderr.String()
-		} else {
-			result.Status = models.CommandStatusCompleted
-			output = stdout.String()
-		}
-
-		result.Output = formatter.ToJsonString(output)
-
+		result := e.ExecuteShellCommand(cmd)
 		if err := e.resultsQueue.Add(result); err != nil {
 			fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
 			result.Status = models.CommandStatusFailed
@@ -118,8 +88,4 @@ func (e *DefaultCommandExecutor) ProcessCommandQueue() {
 
 		time.Sleep(100 * time.Millisecond)
 	}
-}
-
-func isWindows() bool {
-	return runtime.GOOS == "windows"
 }
