@@ -74,5 +74,5 @@ func (c *AgentClient) Stop() {
 }
 
 func getOutboundIP() string {
-	return "127.0.0.1" // Placeholder
+	return "127.0.0.1"
 }

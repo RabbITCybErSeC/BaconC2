@@ -10,7 +10,6 @@ import (
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
-	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
 )
 
 type DefaultCommandExecutor struct {
@@ -40,7 +39,7 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 		result := models.CommandResult{
 			ID:     cmd.ID,
 			Status: models.CommandStatusFailed,
-			Output: formatter.ToJsonString(map[string]string{"error": "Internal command handler not found"}),
+			Output: "Internal command handler not found",
 		}
 		if err := e.resultsQueue.Add(result); err != nil {
 			fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
