@@ -6,6 +6,18 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 )
 
+var commandRegistry *CommandHandlerRegistry
+
+func init() {
+	commandRegistry = NewCommandHandlerRegistry()
+	// setup default built-in handlers
+	commandRegistry.RegisterHandler(*NewGetRegisteredClientHandlers())
+}
+
+func GetGlobalCommandRegistry() *CommandHandlerRegistry {
+	return commandRegistry
+}
+
 type CommandHandler struct {
 	Name    string
 	Handler func(cmd models.Command) models.CommandResult
