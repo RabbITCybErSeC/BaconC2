@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	handler.NewCommandHandlerRegistry().RegisterHandler(*NewGetExtendedInfoCommandHandler())
+	handler.GetGlobalCommandRegistry().RegisterHandler(*NewGetExtendedInfoCommandHandler())
 }
 
 type MinimalSysInfo struct {
