@@ -31,9 +31,14 @@ func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], results
 }
 
 func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResult {
+
 	if cmd.Type == models.CommandTypeInternal {
 		if handler, exists := e.commandRegistry.GetHandler(cmd.Command); exists {
-			return handler.Handler(cmd)
+			result := handler.Handler(cmd)
+			if err := e.resultsQueue.Add(result); err != nil {
+				fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
+			}
+			return result
 		}
 
 		result := models.CommandResult{

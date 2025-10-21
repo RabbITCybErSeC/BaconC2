@@ -4,6 +4,8 @@ var commandRegistry *CommandHandlerRegistry
 
 func init() {
 	commandRegistry = NewCommandHandlerRegistry()
+	// setup default built-in handlers
+	commandRegistry.RegisterHandler(*NewGetRegisteredClientHandlers())
 }
 
 func GetGlobalCommandRegistry() *CommandHandlerRegistry {

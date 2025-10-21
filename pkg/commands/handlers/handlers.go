@@ -35,7 +35,7 @@ func (r *CommandHandlerRegistry) GetHandler(name string) (CommandHandler, bool) 
 	return h, ok
 }
 
-func (r *CommandHandlerRegistry) AllCommandNames() []string {
+func (r *CommandHandlerRegistry) GetAllRegisteredHandlers() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	names := make([]string, 0, len(r.handlers))
