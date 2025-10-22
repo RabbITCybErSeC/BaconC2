@@ -22,7 +22,7 @@ type Logger interface {
 
 var (
 	mu           sync.RWMutex
-	globalLogger Logger = &noopLogger{}
+	globalLogger Logger
 )
 
 func SetGlobalLogger(l Logger) {
@@ -34,10 +34,28 @@ func SetGlobalLogger(l Logger) {
 func SetLevel(level LogLevel) {
 	mu.RLock()
 	defer mu.RUnlock()
-	globalLogger.SetLevel(level)
+	if globalLogger != nil {
+		globalLogger.SetLevel(level)
+	}
 }
 
-func Debug(msg string, args ...interface{}) { globalLogger.Debug(msg, args...) }
-func Info(msg string, args ...interface{})  { globalLogger.Info(msg, args...) }
-func Warn(msg string, args ...interface{})  { globalLogger.Warn(msg, args...) }
-func Error(msg string, args ...interface{}) { globalLogger.Error(msg, args...) }
+func Debug(msg string, args ...interface{}) {
+	if globalLogger != nil {
+		globalLogger.Debug(msg, args...)
+	}
+}
+func Info(msg string, args ...interface{}) {
+	if globalLogger != nil {
+		globalLogger.Info(msg, args...)
+	}
+}
+func Warn(msg string, args ...interface{}) {
+	if globalLogger != nil {
+		globalLogger.Warn(msg, args...)
+	}
+}
+func Error(msg string, args ...interface{}) {
+	if globalLogger != nil {
+		globalLogger.Error(msg, args...)
+	}
+}

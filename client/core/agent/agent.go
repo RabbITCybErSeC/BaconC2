@@ -1,11 +1,10 @@
 package agent
 
 import (
-	"log"
-
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers/system"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 )
@@ -33,7 +32,7 @@ func (c *AgentClient) Initialize() error {
 	sysInfo, err := system.GatherMinimalInfo(c.config.Protocol)
 
 	if err != nil {
-		log.Printf("Failed to gather minimal system info: %v", err)
+		logging.Warn("Failed to gather minimal system info: %v", err)
 	}
 
 	c.agent = models.Agent{
@@ -57,7 +56,7 @@ func (c *AgentClient) Start() error {
 	}
 
 	c.isRunning = true
-	log.Printf("Agent %s started, beaconing every %s", c.agent.ID, c.config.BeaconInterval)
+	logging.Debug("Agent %s started, beaconing every %s", c.agent.ID, c.config.BeaconInterval)
 	go c.transport.Start()
 
 	return nil
@@ -71,7 +70,7 @@ func (c *AgentClient) Stop() {
 	c.isRunning = false
 
 	if err := c.transport.Stop(); err != nil {
-		log.Printf("Error closing transport: %v", err)
+		logging.Debug("Error closing transport: %v", err)
 	}
 }
 

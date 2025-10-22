@@ -5,6 +5,10 @@ package logging
 
 type noopLogger struct{}
 
+func init() {
+	SetGlobalLogger(&noopLogger{})
+}
+
 func (n *noopLogger) SetLevel(level LogLevel)               {}
 func (n *noopLogger) Debug(msg string, args ...interface{}) {}
 func (n *noopLogger) Info(msg string, args ...interface{})  {}

