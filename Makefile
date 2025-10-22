@@ -12,6 +12,7 @@ ARCHS = amd64 arm64
 TARGET_OS ?= darwin
 TARGET_ARCH ?= arm64
 TARGET = $(TARGET_OS)-$(TARGET_ARCH)
+
 GET_TAGS = $(shell jq -r '.components[] | select(.enabled) | .build_tag' $(BUILD_CONFIG) | tr '\n' ' ')
 
 VALID_OS := $(filter $(TARGET_OS),$(PLATFORMS))
@@ -25,11 +26,11 @@ endif
 
 # Build tags and flags
 LDFLAGS = -s -w
-SERVER_TAGS = go_sqlite,server,$(TARGET_OS)
-CLIENT_TAGS = $(TARGET_OS)
+SERVER_TAGS = go_sqlite,server,$(TARGET_OS) $(GET_TAGS)
+CLIENT_TAGS = $(TARGET_OS) $(GET_TAGS)
 
 SERVER_BUILD_FLAGS = -trimpath -tags "$(SERVER_TAGS)" -ldflags "$(LDFLAGS)"
-CLIENT_BUILD_FLAGS = -trimpath -tags "$(CLIENT_TAGS) $(GET_TAGS)" -ldflags "$(LDFLAGS)"
+CLIENT_BUILD_FLAGS = -trimpath -tags "$(CLIENT_TAGS)" -ldflags "$(LDFLAGS)"
 
 SERVER_OUTPUT = $(BIN_DIR)/$(BINARY_NAME)_$(TARGET)
 CLIENT_OUTPUT = $(BIN_DIR)/$(CLIENT_BINARY_NAME)_$(TARGET)
@@ -50,17 +51,19 @@ all-platforms: build-front-end
 $(BIN_DIR):
 	@mkdir -p $(BIN_DIR)
 
-build-front-end: 
+build-front-end:
 	@echo "Building front-end"
 	@cd $(FRONT_END_DIR) && npm run build
 
 compile-server: $(BIN_DIR)
 	@echo "Building server for $(TARGET)..."
+	@echo "→ Tags: $(SERVER_TAGS)"
 	@cd $(SERV_SRC_DIR) && GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) CGO_ENABLED=1 $(GO) build $(SERVER_BUILD_FLAGS) -o ../$(SERVER_OUTPUT) .
 	@echo "Server build completed: $(SERVER_OUTPUT)"
 
 compile-client: $(BIN_DIR)
 	@echo "Building client for $(TARGET)..."
+	@echo "→ Tags: $(CLIENT_TAGS)"
 	@cd $(CLIENT_SRC_DIR) && GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) CGO_ENABLED=0 $(GO) build $(CLIENT_BUILD_FLAGS) -o ../$(CLIENT_OUTPUT) .
 	@echo "Client build completed: $(CLIENT_OUTPUT)"
 
@@ -73,10 +76,9 @@ run-client:
 	@cd $(CLIENT_SRC_DIR) && $(GO) run -tags "$(CLIENT_TAGS)" .
 
 show-modules:
-	@echo "\n Enabled commands modules:"
-	@echo 
+	@echo "\nEnabled components from build.json:"
 	@jq -r '.components[] | select(.enabled) | "- " + .name + " (tag: " + .build_tag + ")"' $(BUILD_CONFIG)
-	@echo 
+	@echo
 
 clean:
 	@echo "Cleaning up..."
