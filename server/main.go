@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/server/api"
@@ -20,7 +20,8 @@ import (
 )
 
 func main() {
-	// Initialize configuration
+	logging.SetLevel(logging.LevelDebug)
+
 	cfg := config.NewServerConfig()
 
 	agentRepo := db.NewAgentRepository(cfg.DB)
@@ -51,35 +52,27 @@ func main() {
 		Handler: ginEngine,
 	}
 
-	// Start frontend server in a goroutine
 	go func() {
-		log.Printf("Starting frontend server on port %d", cfg.FrontHTTPConfig.Port)
+		logging.Info("Starting frontend server on port %d", cfg.FrontHTTPConfig.Port)
 		if err := frontendServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("Frontend server error: %v", err)
+			logging.Error("Frontend server error: %v", err)
 		}
 	}()
 
-	// UDP transport (commented out, preserved for future use)
-	// if cfg.UDPConfig.Enabled {
-	// 	udpTransport := transport.NewUDPTransport(cfg.UDPConfig)
-	// 	server.AddTransport(udpTransport)
-	// }
-
-	// Start the server for agent handling
 	if err := server.Start(); err != nil {
-		log.Fatalf("Failed to start services: %v", err)
+		logging.Error("Failed to start services: %v", err)
+		os.Exit(1)
 	}
 
-	log.Println("Server running. Press Ctrl+C to stop.")
+	logging.Info("Server running. Press Ctrl+C to stop.")
 
-	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
-	log.Println("Shutting down...")
+	logging.Info("Shutting down...")
 	if err := frontendServer.Shutdown(context.Background()); err != nil {
-		log.Printf("Frontend server shutdown error: %v", err)
+		logging.Error("Frontend server shutdown error: %v", err)
 	}
 	server.Stop()
 }

