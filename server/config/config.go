@@ -126,8 +126,29 @@ func runMigrations(db *gorm.DB) error {
 		return err
 	}
 
+	if err := migrateArgsColumn(db); err != nil {
+		return err
+	}
+
 	if err := seedStaticUser(db); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func migrateArgsColumn(db *gorm.DB) error {
+	var columnExists bool
+	err := db.Raw("SELECT COUNT(*) FROM pragma_table_info('agent_commands') WHERE name='args'").Scan(&columnExists).Error
+	if err != nil {
+		return err
+	}
+
+	if columnExists {
+		err = db.Exec("UPDATE agent_commands SET args = '[]' WHERE args IS NULL OR args = ''").Error
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

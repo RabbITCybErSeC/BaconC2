@@ -39,7 +39,7 @@ type RawCommand struct {
 type Command struct {
 	ID      string        `json:"id" gorm:"primaryKey"`
 	Command string        `json:"command"`
-	Args    []string      `json:"args,omitempty" gorm:"type:text;serializer:json"`
+	Args    []string      `json:"args,omitempty" gorm:"type:json"`
 	Type    CommandType   `json:"type"`
 	Status  CommandStatus `json:"status"`
 }
