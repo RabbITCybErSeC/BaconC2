@@ -203,13 +203,13 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
             </div>
 
             {/* Tab Contents */}
-            <div className="mt-4">
+            <div className="mt-4 flex flex-col flex-1 min-h-0">
               {activeTab === "terminal" && (
-                <div>
+                <div className="flex flex-col flex-1 min-h-0">
                   <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
                     Terminal Output
                   </h3>
-                  <div className="bg-black dark:bg-gray-900 text-green-400 font-mono text-sm p-3 rounded-lg h-64 overflow-y-auto border border-gray-700 dark:border-gray-600">
+                  <div className="bg-black dark:bg-gray-900 text-green-400 font-mono text-sm p-3 rounded-lg flex-1 overflow-y-auto border border-gray-700 dark:border-gray-600">
                     {terminalOutput.map((line, idx) => (
                       <div key={idx}>{line}</div>
                     ))}
@@ -218,11 +218,13 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
               )}
 
               {activeTab === "timeline" && (
-                <div>
+                <div className="flex flex-col flex-1 min-h-0">
                   <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
                     Command Timeline
                   </h3>
-                  <CommandTimeline commands={commands} />
+                  <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                    <CommandTimeline commands={commands} maxHeight="h-full" />
+                  </div>
 
                   <CommandInput onSend={handleSendCommand} />
                 </div>
