@@ -38,8 +38,8 @@ const SidebarModal: React.FC<SidebarModalProps> = ({
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="h-[calc(100%-8rem)] overflow-y-auto p-4">{children}</div>
+        {/* Content */}
+        <div className="h-[calc(100%-8rem)] p-4 flex flex-col">{children}</div>
 
         {/* Footer */}
         {footer && (

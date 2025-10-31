@@ -201,69 +201,72 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Tab Contents - Scrollable */}
-            <div className="mt-4 flex-1 min-h-0 flex flex-col">
-              {activeTab === "terminal" && (
-                <div className="flex flex-col flex-1 min-h-0">
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                    Terminal Output
-                  </h3>
-                  <div className="bg-black dark:bg-gray-900 text-green-400 font-mono text-sm p-3 rounded-lg flex-1 overflow-y-auto border border-gray-700 dark:border-gray-600">
-                    {terminalOutput.map((line, idx) => (
-                      <div key={idx}>{line}</div>
-                    ))}
-                  </div>
+          {/* Tab Contents - Flexible height */}
+          <div className="mt-4 flex-1 min-h-0 flex flex-col">
+            {activeTab === "terminal" && (
+              <div className="flex flex-col flex-1 min-h-0">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 flex-shrink-0">
+                  Terminal Output
+                </h3>
+                <div className="bg-black dark:bg-gray-900 text-green-400 font-mono text-sm p-3 rounded-lg flex-1 overflow-y-auto border border-gray-700 dark:border-gray-600">
+                  {terminalOutput.map((line, idx) => (
+                    <div key={idx}>{line}</div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {activeTab === "timeline" && (
-                <div className="flex flex-col flex-1 min-h-0">
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                    Command Timeline
-                  </h3>
-                  <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                    <CommandTimeline commands={commands} maxHeight="h-full" />
-                  </div>
-
+            {activeTab === "timeline" && (
+              <div className="flex flex-col flex-1 min-h-0">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 flex-shrink-0">
+                  Command Timeline
+                </h3>
+                {/* Scrollable timeline area */}
+                <div className="flex-1 min-h-0 overflow-y-auto mb-3">
+                  <CommandTimeline commands={commands} />
+                </div>
+                {/* Fixed input at bottom */}
+                <div className="flex-shrink-0">
                   <CommandInput onSend={handleSendCommand} />
                 </div>
-              )}
+              </div>
+            )}
 
-              {activeTab === "extended" && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                    Extended Info
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Extended agent details will appear here (to be implemented).
-                  </p>
-                </div>
-              )}
+            {activeTab === "extended" && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                  Extended Info
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Extended agent details will appear here (to be implemented).
+                </p>
+              </div>
+            )}
 
-              {activeTab === "actions" && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                    Quick Actions
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => handleSendCommand("whoami", "shell")}
-                    className="w-full bg-violet-600 text-white py-2.5 px-5 rounded-lg hover:bg-violet-700 focus:ring-4 focus:outline-none focus:ring-violet-300 font-medium text-sm text-center dark:bg-violet-500 dark:hover:bg-violet-600 dark:focus:ring-violet-800"
-                  >
-                    Run whoami
-                  </button>
+            {activeTab === "actions" && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                  Quick Actions
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => handleSendCommand("whoami", "shell")}
+                  className="w-full bg-violet-600 text-white py-2.5 px-5 rounded-lg hover:bg-violet-700 focus:ring-4 focus:outline-none focus:ring-violet-300 font-medium text-sm text-center dark:bg-violet-500 dark:hover:bg-violet-600 dark:focus:ring-violet-800"
+                >
+                  Run whoami
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSendCommand("get-system-info", "intern")}
-                    className="w-full mt-2 bg-indigo-600 text-white py-2.5 px-5 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium text-sm text-center dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-800"
-                  >
-                    Run internal system check
-                  </button>
-                </div>
-              )}
-            </div>
+                <button
+                  type="button"
+                  onClick={() => handleSendCommand("get-system-info", "intern")}
+                  className="w-full mt-2 bg-indigo-600 text-white py-2.5 px-5 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium text-sm text-center dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-800"
+                >
+                  Run internal system check
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : (

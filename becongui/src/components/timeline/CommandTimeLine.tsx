@@ -14,7 +14,6 @@ export interface CommandEntry {
 
 interface CommandTimelineProps {
   commands: CommandEntry[];
-  maxHeight?: string;
 }
 
 const statusMap: Record<string, string> = {
@@ -31,7 +30,7 @@ const statusMap: Record<string, string> = {
   s_received: "Received from Server",
 };
 
-const CommandTimeline: React.FC<CommandTimelineProps> = ({ commands, maxHeight = "max-h-72" }) => {
+const CommandTimeline: React.FC<CommandTimelineProps> = ({ commands }) => {
   const visibleCommands = commands.filter(
     (cmd) => !SUPPRESSED_COMMANDS.includes(cmd.command)
   );
@@ -130,7 +129,7 @@ const CommandTimeline: React.FC<CommandTimelineProps> = ({ commands, maxHeight =
   };
 
   return (
-    <div className={`space-y-4 ${maxHeight === "h-full" ? "h-full" : maxHeight} overflow-y-auto pr-2`}>
+    <div className="space-y-4 pr-2">
       {visibleCommands.map((cmd) => (
         <div
           key={cmd.id}
