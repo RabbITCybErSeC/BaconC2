@@ -90,12 +90,21 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
   const handleSendCommand = async (command: string, type: string = "shell") => {
     if (!agent) return;
     try {
+
+      const parts = command.trim().split(/\s+/);
+      const cmdName = parts[0];
+      const cmdArgs = parts.slice(1);
+
       const res = await fetch(`/api/v1/general/queue/command/${agent.id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ command, type }), // Matches Go RawCommand struct
+        body: JSON.stringify({ 
+          command: cmdName,
+          args: cmdArgs,
+          type 
+        }), 
       });
 
       if (!res.ok) {
@@ -116,7 +125,7 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
 
       setTerminalOutput((prev) => [
         ...prev,
-        `[>] Sending instruction: ${command} (${type})`,
+        `[>] Sending instruction: ${cmdName} ${cmdArgs.join(" ")} (${type})`,
         `[+] Awaiting response...`,
       ]);
     } catch (err) {
