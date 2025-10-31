@@ -131,9 +131,9 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
       title={agent ? `Agent: ${agent.hostname}` : "No Agent Selected"}
     >
       {agent ? (
-        <div className="space-y-6">
-          {/* General Info */}
-          <div className="space-y-2">
+        <div className="flex flex-col h-full">
+          {/* General Info - Fixed */}
+          <div className="space-y-2 flex-shrink-0">
             <h3 className="text-sm uppercase text-gray-400 dark:text-gray-500 font-semibold">
               General Info
             </h3>
@@ -161,8 +161,8 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
             </div>
           </div>
 
-          {/* Tabs */}
-          <div>
+          {/* Tabs - Fixed */}
+          <div className="mt-6 flex-shrink-0">
             <div className="flex border-b border-gray-200 dark:border-gray-700">
               {[
                 {
@@ -202,8 +202,8 @@ const InteractionAgentSideBar: React.FC<InteractAgentSideBarProps> = ({
               ))}
             </div>
 
-            {/* Tab Contents */}
-            <div className="mt-4 flex flex-col flex-1 min-h-0">
+            {/* Tab Contents - Scrollable */}
+            <div className="mt-4 flex-1 min-h-0 flex flex-col">
               {activeTab === "terminal" && (
                 <div className="flex flex-col flex-1 min-h-0">
                   <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
