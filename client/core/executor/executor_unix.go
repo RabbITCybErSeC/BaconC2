@@ -18,7 +18,7 @@ func (e *DefaultCommandExecutor) ExecuteShellCommand(cmd models.Command) models.
 	var execCmd *exec.Cmd
 
 	if len(cmd.Args) > 0 {
-		execCmd = exec.Command(cmd.Command, cmd.Args...)
+		execCmd = exec.Command(cmd.Command, []string(cmd.Args)...)
 	} else {
 		execCmd = exec.Command("sh", "-c", cmd.Command)
 	}

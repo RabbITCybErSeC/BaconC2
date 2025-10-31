@@ -1,6 +1,11 @@
 package models
 
-import "github.com/google/uuid"
+import (
+	"database/sql/driver"
+	"encoding/json"
+
+	"github.com/google/uuid"
+)
 
 type CommandStatus string
 type CommandType string
@@ -24,6 +29,42 @@ const (
 	CommandStatusReceivedFromServer CommandStatus = "s_received"
 )
 
+type JSONStringSlice []string
+
+// Scan implements sql.Scanner
+func (j *JSONStringSlice) Scan(value interface{}) error {
+	if value == nil {
+		*j = []string{}
+		return nil
+	}
+
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		*j = []string{}
+		return nil
+	}
+
+	if len(bytes) == 0 || string(bytes) == "" {
+		*j = []string{}
+		return nil
+	}
+
+	return json.Unmarshal(bytes, j)
+}
+
+// Value implements driver.Valuer
+func (j JSONStringSlice) Value() (driver.Value, error) {
+	if len(j) == 0 {
+		return "[]", nil
+	}
+	return json.Marshal(j)
+}
+
 type WebSocketMessage struct {
 	Type string `json:"type"` // "input", "output", "error", "control"
 	Data string `json:"data"`
@@ -31,17 +72,17 @@ type WebSocketMessage struct {
 }
 
 type RawCommand struct {
-	Type    CommandType `json:"type"`
-	Command string      `json:"command"`
-	Args    []string    `json:"args,omitempty"`
+	Type    CommandType     `json:"type"`
+	Command string          `json:"command"`
+	Args    JSONStringSlice `json:"args,omitempty"`
 }
 
 type Command struct {
-	ID      string        `json:"id" gorm:"primaryKey"`
-	Command string        `json:"command"`
-	Args    []string      `json:"args,omitempty" gorm:"type:json"`
-	Type    CommandType   `json:"type"`
-	Status  CommandStatus `json:"status"`
+	ID      string          `json:"id" gorm:"primaryKey"`
+	Command string          `json:"command"`
+	Args    JSONStringSlice `json:"args,omitempty" gorm:"type:text"`
+	Type    CommandType     `json:"type"`
+	Status  CommandStatus   `json:"status"`
 }
 
 type CommandResult struct {
