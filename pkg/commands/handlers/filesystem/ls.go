@@ -29,9 +29,10 @@ func LsHandler(ctx *command_handler.CommandContext) models.CommandResult {
 	entries, err := os.ReadDir(targetPath)
 	if err != nil {
 		return models.CommandResult{
-			ID:     ctx.Command.ID,
-			Status: models.CommandStatusFailed,
-			Output: fmt.Sprintf("Failed to list directory '%s': %v", targetPath, err),
+			ID:         ctx.Command.ID,
+			Status:     models.CommandStatusFailed,
+			Output:     fmt.Sprintf("Failed to list directory '%s': %v", targetPath, err),
+			ResultType: models.ResultTypeError,
 		}
 	}
 
@@ -76,9 +77,10 @@ func LsHandler(ctx *command_handler.CommandContext) models.CommandResult {
 	output.WriteString(fmt.Sprintf("\nTotal: %d items\n", len(entries)))
 
 	return models.CommandResult{
-		ID:     ctx.Command.ID,
-		Status: models.CommandStatusCompleted,
-		Output: output.String(),
+		ID:         ctx.Command.ID,
+		Status:     models.CommandStatusCompleted,
+		Output:     output.String(),
+		ResultType: models.ResultTypeTable,
 	}
 }
 
@@ -152,16 +154,18 @@ func LsDetailedHandler(ctx *command_handler.CommandContext) models.CommandResult
 
 	if err != nil {
 		return models.CommandResult{
-			ID:     ctx.Command.ID,
-			Status: models.CommandStatusFailed,
-			Output: fmt.Sprintf("Failed to list directory: %v", err),
+			ID:         ctx.Command.ID,
+			Status:     models.CommandStatusFailed,
+			Output:     fmt.Sprintf("Failed to list directory: %v", err),
+			ResultType: models.ResultTypeError,
 		}
 	}
 
 	return models.CommandResult{
-		ID:     ctx.Command.ID,
-		Status: models.CommandStatusCompleted,
-		Output: output.String(),
+		ID:         ctx.Command.ID,
+		Status:     models.CommandStatusCompleted,
+		Output:     output.String(),
+		ResultType: models.ResultTypeTable,
 	}
 }
 

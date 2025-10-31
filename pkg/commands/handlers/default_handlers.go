@@ -19,8 +19,9 @@ func GetRegisteredClientHandlers(cmd models.Command) models.CommandResult {
 	outputData := formatter.ToJsonString(handlerNames)
 
 	return models.CommandResult{
-		ID:     cmd.ID,
-		Status: models.CommandStatusCompleted,
-		Output: outputData,
+		ID:         cmd.ID,
+		Status:     models.CommandStatusCompleted,
+		Output:     outputData,
+		ResultType: models.ResultTypeList,
 	}
 }

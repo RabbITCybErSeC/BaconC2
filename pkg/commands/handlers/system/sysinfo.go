@@ -56,9 +56,10 @@ func GetExtendedInfoHandler(cmd models.Command) models.CommandResult {
 	sysInfo, err := GatherExtendedInfo()
 	if err != nil {
 		return models.CommandResult{
-			ID:     cmd.ID,
-			Status: "error",
-			Output: formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to gather extended system info: %v", err)}),
+			ID:         cmd.ID,
+			Status:     "error",
+			Output:     formatter.ToJsonString(map[string]string{"error": fmt.Sprintf("Failed to gather extended system info: %v", err)}),
+			ResultType: models.ResultTypeError,
 		}
 	}
 
@@ -78,8 +79,9 @@ func GetExtendedInfoHandler(cmd models.Command) models.CommandResult {
 	}
 
 	return models.CommandResult{
-		ID:     cmd.ID,
-		Status: models.CommandStatusCompleted,
-		Output: formatter.ToJsonString(output),
+		ID:         cmd.ID,
+		Status:     models.CommandStatusCompleted,
+		Output:     formatter.ToJsonString(output),
+		ResultType: models.ResultTypeKeyValue,
 	}
 }

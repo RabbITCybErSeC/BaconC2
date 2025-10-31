@@ -9,6 +9,7 @@ export interface CommandEntry {
   status: string;
   createdAt: string;
   result?: string;
+  result_type?: string;
 }
 
 interface CommandTimelineProps {
@@ -54,6 +55,79 @@ const CommandTimeline: React.FC<CommandTimelineProps> = ({ commands }) => {
     return "border-orange-500";
   };
 
+  const formatResult = (result: string, resultType?: string): React.ReactNode => {
+    if (!result) return null;
+
+    try {
+      const parsed = JSON.parse(result);
+      
+      switch (resultType) {
+        case "list":
+          // Format as bullet list
+          if (Array.isArray(parsed)) {
+            return (
+              <ul className="list-disc list-inside space-y-1">
+                {parsed.map((item, idx) => (
+                  <li key={idx} className="text-green-400">{item}</li>
+                ))}
+              </ul>
+            );
+          }
+          break;
+        
+        case "key_value":
+        case "structured":
+          // Format as key-value pairs
+          if (typeof parsed === "object" && !Array.isArray(parsed)) {
+            return (
+              <div className="space-y-1">
+                {Object.entries(parsed).map(([key, value]) => (
+                  <div key={key} className="flex gap-2">
+                    <span className="text-blue-400 font-semibold">{key}:</span>
+                    <span className="text-green-400">
+                      {typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          break;
+        
+        case "json":
+          // Pretty print JSON
+          return (
+            <pre className="text-green-400 whitespace-pre-wrap">
+              {JSON.stringify(parsed, null, 2)}
+            </pre>
+          );
+        
+        case "error":
+          // Highlight errors in red
+          return (
+            <div className="text-red-400 font-medium">
+              {typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2)}
+            </div>
+          );
+        
+        case "table":
+        case "text":
+        default:
+          // Plain text or table - display as-is
+          return (
+            <span className="text-green-400 whitespace-pre-wrap">
+              {typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2)}
+            </span>
+          );
+      }
+    } catch {
+      // If not valid JSON, display as plain text
+      return <span className="text-green-400 whitespace-pre-wrap">{result}</span>;
+    }
+    
+    return <span className="text-green-400 whitespace-pre-wrap">{result}</span>;
+  };
+
   return (
     <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
       {visibleCommands.map((cmd) => (
@@ -86,9 +160,9 @@ const CommandTimeline: React.FC<CommandTimelineProps> = ({ commands }) => {
             </span>
           </div>
           {cmd.result && (
-            <pre className="bg-gray-900 text-green-400 font-mono text-xs mt-2 p-2 rounded-lg whitespace-pre-wrap border border-gray-700 dark:border-gray-600">
-              {cmd.result}
-            </pre>
+            <div className="bg-gray-900 font-mono text-xs mt-2 p-2 rounded-lg border border-gray-700 dark:border-gray-600">
+              {formatResult(cmd.result, cmd.result_type)}
+            </div>
           )}
         </div>
       ))}

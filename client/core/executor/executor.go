@@ -54,9 +54,10 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 		}
 
 		result := models.CommandResult{
-			ID:     cmd.ID,
-			Status: models.CommandStatusFailed,
-			Output: "Internal command handler not found",
+			ID:         cmd.ID,
+			Status:     models.CommandStatusFailed,
+			Output:     "Internal command handler not found",
+			ResultType: models.ResultTypeError,
 		}
 		if err := e.resultsQueue.Add(result); err != nil {
 			fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
@@ -75,9 +76,10 @@ func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResul
 	}
 
 	result := models.CommandResult{
-		ID:     cmd.ID,
-		Status: models.CommandStatusFailed,
-		Output: fmt.Sprintf("Unsupported command type: '%s'", cmd.Type),
+		ID:         cmd.ID,
+		Status:     models.CommandStatusFailed,
+		Output:     fmt.Sprintf("Unsupported command type: '%s'", cmd.Type),
+		ResultType: models.ResultTypeError,
 	}
 
 	if err := e.resultsQueue.Add(result); err != nil {

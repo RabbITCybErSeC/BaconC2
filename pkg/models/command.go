@@ -9,10 +9,21 @@ import (
 
 type CommandStatus string
 type CommandType string
+type ResultType string
 
 const (
 	CommandTypeInternal CommandType = "intern"
 	CommandTypeShell    CommandType = "shell"
+)
+
+const (
+	ResultTypeText       ResultType = "text"
+	ResultTypeJSON       ResultType = "json"
+	ResultTypeTable      ResultType = "table"
+	ResultTypeError      ResultType = "error"
+	ResultTypeList       ResultType = "list"
+	ResultTypeKeyValue   ResultType = "key_value"
+	ResultTypeStructured ResultType = "structured"
 )
 
 const (
@@ -86,9 +97,10 @@ type Command struct {
 }
 
 type CommandResult struct {
-	ID     string        `json:"id"`
-	Status CommandStatus `json:"status"`
-	Output string        `json:"output,omitempty" gorm:"type:text"`
+	ID         string        `json:"id"`
+	Status     CommandStatus `json:"status"`
+	Output     string        `json:"output,omitempty" gorm:"type:text"`
+	ResultType ResultType    `json:"result_type,omitempty" gorm:"type:varchar(50);default:'text'"`
 }
 
 type ICommandExecutor interface {
@@ -124,8 +136,18 @@ func NewCommand(command string, cmdType CommandType, args ...string) *Command {
 
 func NewCommandResult(commandID string, status CommandStatus, output string) *CommandResult {
 	return &CommandResult{
-		ID:     commandID,
-		Status: status,
-		Output: output,
+		ID:         commandID,
+		Status:     status,
+		Output:     output,
+		ResultType: ResultTypeText,
+	}
+}
+
+func NewCommandResultWithType(commandID string, status CommandStatus, output string, resultType ResultType) *CommandResult {
+	return &CommandResult{
+		ID:         commandID,
+		Status:     status,
+		Output:     output,
+		ResultType: resultType,
 	}
 }

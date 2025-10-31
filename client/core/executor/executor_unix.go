@@ -31,9 +31,11 @@ func (e *DefaultCommandExecutor) ExecuteShellCommand(cmd models.Command) models.
 	var output interface{}
 	if err != nil {
 		result.Status = models.CommandStatusFailed
+		result.ResultType = models.ResultTypeError
 		output = stderr.String()
 	} else {
 		result.Status = models.CommandStatusCompleted
+		result.ResultType = models.ResultTypeText
 		output = stdout.String()
 	}
 
