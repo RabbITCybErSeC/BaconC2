@@ -24,13 +24,15 @@ type CommandHandler struct {
 }
 
 type CommandHandlerRegistry struct {
-	mu       sync.RWMutex
-	handlers map[string]CommandHandler
+	mu               sync.RWMutex
+	handlers         map[string]CommandHandler
+	statefulHandlers map[string]StatefulCommandHandler
 }
 
 func NewCommandHandlerRegistry() *CommandHandlerRegistry {
 	return &CommandHandlerRegistry{
-		handlers: make(map[string]CommandHandler),
+		handlers:         make(map[string]CommandHandler),
+		statefulHandlers: make(map[string]StatefulCommandHandler),
 	}
 }
 
@@ -61,8 +63,32 @@ func (r *CommandHandlerRegistry) Unregister(name string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, exists := r.handlers[name]; !exists {
-		return false
+		if _, exists := r.statefulHandlers[name]; !exists {
+			return false
+		}
+		delete(r.statefulHandlers, name)
+		return true
 	}
 	delete(r.handlers, name)
 	return true
+}
+
+func (r *CommandHandlerRegistry) RegisterStatefulHandler(handler StatefulCommandHandler) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.statefulHandlers[handler.Name] = handler
+}
+
+func (r *CommandHandlerRegistry) GetStatefulHandler(name string) (StatefulCommandHandler, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	h, ok := r.statefulHandlers[name]
+	return h, ok
+}
+
+func (r *CommandHandlerRegistry) HasStatefulHandler(name string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	_, ok := r.statefulHandlers[name]
+	return ok
 }

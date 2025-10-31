@@ -18,21 +18,33 @@ type DefaultCommandExecutor struct {
 	transport       transport.ITransportProtocol
 	config          *config.AgentConfig
 	commandRegistry *command_handler.CommandHandlerRegistry
+	agentState      command_handler.IAgentState
 }
 
-func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], resultsQueue queue.GenericQueue[models.CommandResult], transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport, cfg *config.AgentConfig, cmdRegistry *command_handler.CommandHandlerRegistry) models.ICommandExecutor {
+func NewDefaultCommandExecutor(queue queue.GenericQueue[models.Command], resultsQueue queue.GenericQueue[models.CommandResult], transport transport.ITransportProtocol, streamingTransport local_models.IStreamingTransport, cfg *config.AgentConfig, cmdRegistry *command_handler.CommandHandlerRegistry, agentState command_handler.IAgentState) models.ICommandExecutor {
 	return &DefaultCommandExecutor{
 		queue:           queue,
 		resultsQueue:    resultsQueue,
 		transport:       transport,
 		config:          cfg,
 		commandRegistry: cmdRegistry,
+		agentState:      agentState,
 	}
 }
 
 func (e *DefaultCommandExecutor) Execute(cmd models.Command) models.CommandResult {
 
 	if cmd.Type == models.CommandTypeInternal {
+
+		if statefulHandler, exists := e.commandRegistry.GetStatefulHandler(cmd.Command); exists {
+			ctx := command_handler.NewCommandContext(cmd, e.agentState)
+			result := statefulHandler.Handler(ctx)
+			if err := e.resultsQueue.Add(result); err != nil {
+				fmt.Printf("Error queuing result for command %s: %v\n", cmd.ID, err)
+			}
+			return result
+		}
+
 		if handler, exists := e.commandRegistry.GetHandler(cmd.Command); exists {
 			result := handler.Handler(cmd)
 			if err := e.resultsQueue.Add(result); err != nil {

