@@ -43,10 +43,9 @@ type UDPConfig struct {
 }
 
 func NewServerConfig() *ServerConfig {
-	// Load .env file if it exists - try multiple locations
-	_ = godotenv.Load()              // current directory
-	_ = godotenv.Load(".env.local")  // local overrides
-	_ = godotenv.Load("config/.env") // config directory
+	_ = godotenv.Load()
+	_ = godotenv.Load(".env.local")
+	_ = godotenv.Load("config/.env")
 
 	httpPort := flag.Int("http-port", getIntEnv("HTTP_PORT", 8080), "HTTP server port")
 	agentPort := flag.Int("agent-port", getIntEnv("AGENT_PORT", 8081), "Agent server port")
@@ -88,7 +87,6 @@ func NewServerConfig() *ServerConfig {
 	}
 	config.DB = db
 
-	// Log configuration summary
 	log.Printf("Server starting - Port: %s, Environment: %s, Max Agents: %d",
 		config.Port, config.Env, config.MaxAgents)
 	if config.UDPConfig.Enabled {
