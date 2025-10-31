@@ -70,7 +70,7 @@ func (as *HTTPServerTransport) handleRegister(c *gin.Context) {
 	}
 
 	agent.Agent = incomingAgent
-	agent.Protocol = "http"
+	agent.Protocol = ProtocolName
 	agent.LastSeen = time.Now()
 	agent.IsActive = true
 	agent.Commands = []local_models.AgentCommand{}
@@ -83,7 +83,6 @@ func (as *HTTPServerTransport) handleRegister(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": "registered"})
 }
 
-// handleBeacon handles agent beaconing
 func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
 	agentID := c.Query("id")
 
@@ -98,7 +97,6 @@ func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
 		return
 	}
 
-	// Update agent's last seen timestamp
 	if err := as.agentRepository.UpdateLastSeen(c.Request.Context(), agentID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update last seen: " + err.Error()})
 		return
