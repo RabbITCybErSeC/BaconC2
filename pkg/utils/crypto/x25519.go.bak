@@ -1,0 +1,350 @@
+package crypto
+
+import (
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+
+	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/curve25519"
+)
+
+const (
+	sha256Size = 32 // size in bytes of a sha256 hash
+	x25519KeySize = 32 // size of X25519 keys
+)
+
+
+type X25519KeyPair struct {
+	Public  string `json:"public"`  // Base64 encoded
+	Private string `json:"private"` // Base64 encoded
+}
+
+// PublicKeyBytes returns the public key as bytes
+func (k *X25519KeyPair) PublicKeyBytes() ([]byte, error) {
+	return base64.RawStdEncoding.DecodeString(k.Public)
+}
+
+// PrivateKeyBytes returns the private key as bytes
+func (k *X25519KeyPair) PrivateKeyBytes() ([]byte, error) {
+	return base64.RawStdEncoding.DecodeString(k.Private)
+}
+
+// X25519Cipher implements AsymmetricCipher using X25519 (ECDH) + ChaCha20-Poly1305
+type X25519Cipher struct {
+	keyPair *X25519KeyPair
+}
+
+func NewX25519Cipher(keyPair *X25519KeyPair) *X25519Cipher {
+	return &X25519Cipher{
+		keyPair: keyPair,
+	}
+}
+
+
+func NewX25519CipherFromKeys(publicKey, privateKey string) *X25519Cipher {
+	return &X25519Cipher{
+		keyPair: &X25519KeyPair{
+			Public:  publicKey,
+			Private: privateKey,
+		},
+	}
+}
+
+
+func (c *X25519Cipher) Encrypt(plaintext []byte) ([]byte, error) {
+	// Generate ephemeral key pair
+	ephemeralPrivate := make([]byte, x25519KeySize)
+	if _, err := rand.Read(ephemeralPrivate); err != nil {
+		return nil, err
+	}
+	ephemeralPublic, err := curve25519.X25519(ephemeralPrivate, curve25519.Basepoint)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get recipient's public key
+	recipientPublic, err := c.keyPair.PublicKeyBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform ECDH to get shared secret
+	sharedSecret, err := curve25519.X25519(ephemeralPrivate, recipientPublic)
+	if err != nil {
+		return nil, err
+	}
+
+	// Derive encryption key from shared secret
+	encryptionKey := deriveKeyFrom(sharedSecret)
+
+	// Encrypt with ChaCha20-Poly1305
+	aead, err := chacha20poly1305.New(encryptionKey[:])
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, aead.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, err
+	}
+
+	ciphertext := aead.Seal(nil, nonce, plaintext, nil)
+
+	// Format: ephemeralPublic (32) || nonce (12) || ciphertext
+	result := make([]byte, 0, x25519KeySize+len(nonce)+len(ciphertext))
+	result = append(result, ephemeralPublic...)
+	result = append(result, nonce...)
+	result = append(result, ciphertext...)
+
+	return result, nil
+}
+
+// Decrypt decrypts ciphertext using the private key via ECDH
+func (c *X25519Cipher) Decrypt(ciphertext []byte) ([]byte, error) {
+	// Extract components
+	if len(ciphertext) < x25519KeySize+chacha20poly1305.NonceSize {
+		return nil, ErrInvalidCiphertext
+	}
+
+	ephemeralPublic := ciphertext[:x25519KeySize]
+	nonce := ciphertext[x25519KeySize : x25519KeySize+chacha20poly1305.NonceSize]
+	encryptedData := ciphertext[x25519KeySize+chacha20poly1305.NonceSize:]
+
+	// Get our private key
+	privateKey, err := c.keyPair.PrivateKeyBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform ECDH to get shared secret
+	sharedSecret, err := curve25519.X25519(privateKey, ephemeralPublic)
+	if err != nil {
+		return nil, ErrDecryptFailed
+	}
+
+	// Derive encryption key from shared secret
+	encryptionKey := deriveKeyFrom(sharedSecret)
+
+	// Decrypt with ChaCha20-Poly1305
+	aead, err := chacha20poly1305.New(encryptionKey[:])
+	if err != nil {
+		return nil, err
+	}
+
+	plaintext, err := aead.Open(nil, nonce, encryptedData, nil)
+	if err != nil {
+		return nil, ErrDecryptFailed
+	}
+
+	return plaintext, nil
+}
+
+// PublicKey returns the public key string
+func (c *X25519Cipher) PublicKey() string {
+	return c.keyPair.Public
+}
+
+// PrivateKey returns the private key string
+func (c *X25519Cipher) PrivateKey() string {
+	return c.keyPair.Private
+}
+
+// GenerateX25519KeyPair generates a new X25519 key pair
+func GenerateX25519KeyPair() (*X25519KeyPair, error) {
+	// Generate private key
+	privateKey := make([]byte, x25519KeySize)
+	if _, err := rand.Read(privateKey); err != nil {
+		return nil, err
+	}
+
+	// Derive public key
+	publicKey, err := curve25519.X25519(privateKey, curve25519.Basepoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return &X25519KeyPair{
+		Public:  base64.RawStdEncoding.EncodeToString(publicKey),
+		Private: base64.RawStdEncoding.EncodeToString(privateKey),
+	}, nil
+}
+
+// X25519KeyPairToJSON serializes an X25519 key pair to JSON
+func X25519KeyPairToJSON(keyPair *X25519KeyPair) ([]byte, error) {
+	return json.Marshal(keyPair)
+}
+
+// X25519KeyPairFromJSON deserializes an X25519 key pair from JSON
+func X25519KeyPairFromJSON(data []byte) (*X25519KeyPair, error) {
+	var keyPair X25519KeyPair
+	if err := json.Unmarshal(data, &keyPair); err != nil {
+		return nil, err
+	}
+	return &keyPair, nil
+}
+
+// X25519EncryptWithRecipient encrypts plaintext using a recipient's public key
+func X25519EncryptWithRecipient(recipientPublicKey string, plaintext []byte) ([]byte, error) {
+	// Decode recipient's public key
+	recipientPubBytes, err := base64.RawStdEncoding.DecodeString(recipientPublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid public key: %w", err)
+	}
+	if len(recipientPubBytes) != x25519KeySize {
+		return nil, ErrInvalidKeyLength
+	}
+
+	// Generate ephemeral key pair
+	ephemeralPrivate := make([]byte, x25519KeySize)
+	if _, err := rand.Read(ephemeralPrivate); err != nil {
+		return nil, err
+	}
+	ephemeralPublic, err := curve25519.X25519(ephemeralPrivate, curve25519.Basepoint)
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform ECDH
+	sharedSecret, err := curve25519.X25519(ephemeralPrivate, recipientPubBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Derive encryption key
+	encryptionKey := deriveKeyFrom(sharedSecret)
+
+	// Encrypt with ChaCha20-Poly1305
+	aead, err := chacha20poly1305.New(encryptionKey[:])
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, aead.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, err
+	}
+
+	ciphertext := aead.Seal(nil, nonce, plaintext, nil)
+
+	// Format: ephemeralPublic || nonce || ciphertext
+	result := make([]byte, 0, x25519KeySize+len(nonce)+len(ciphertext))
+	result = append(result, ephemeralPublic...)
+	result = append(result, nonce...)
+	result = append(result, ciphertext...)
+
+	return result, nil
+}
+
+// X25519DecryptWithIdentity decrypts ciphertext using a recipient's private key
+func X25519DecryptWithIdentity(recipientPrivateKey string, ciphertext []byte) ([]byte, error) {
+	// Decode private key
+	privateKeyBytes, err := base64.RawStdEncoding.DecodeString(recipientPrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid private key: %w", err)
+	}
+	if len(privateKeyBytes) != x25519KeySize {
+		return nil, ErrInvalidKeyLength
+	}
+
+	// Extract components
+	if len(ciphertext) < x25519KeySize+chacha20poly1305.NonceSize {
+		return nil, ErrInvalidCiphertext
+	}
+
+	ephemeralPublic := ciphertext[:x25519KeySize]
+	nonce := ciphertext[x25519KeySize : x25519KeySize+chacha20poly1305.NonceSize]
+	encryptedData := ciphertext[x25519KeySize+chacha20poly1305.NonceSize:]
+
+	// Perform ECDH
+	sharedSecret, err := curve25519.X25519(privateKeyBytes, ephemeralPublic)
+	if err != nil {
+		return nil, ErrDecryptFailed
+	}
+
+	// Derive encryption key
+	encryptionKey := deriveKeyFrom(sharedSecret)
+
+	// Decrypt with ChaCha20-Poly1305
+	aead, err := chacha20poly1305.New(encryptionKey[:])
+	if err != nil {
+		return nil, err
+	}
+
+	plaintext, err := aead.Open(nil, nonce, encryptedData, nil)
+	if err != nil {
+		return nil, ErrDecryptFailed
+	}
+
+	return plaintext, nil
+}
+
+// X25519KeyExchange performs authenticated key exchange with HMAC verification
+func X25519KeyExchange(serverPrivateKey, implantPrivateKey string, ciphertext []byte) ([]byte, error) {
+	// Decrypt the message
+	plaintext, err := X25519DecryptWithIdentity(serverPrivateKey, ciphertext)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check there's enough data for an HMAC check
+	if len(plaintext) <= sha256Size {
+		return nil, ErrDecryptFailed
+	}
+
+	// Recompute the HMAC to verify the message
+	privateKeyDigest := sha256.Sum256([]byte(implantPrivateKey))
+	mac := hmac.New(sha256.New, privateKeyDigest[:])
+	mac.Write(plaintext[sha256Size:])
+
+	// Constant-time comparison of the HMACs
+	if !hmac.Equal(mac.Sum(nil), plaintext[:sha256Size]) {
+		return nil, ErrDecryptFailed
+	}
+
+	return plaintext[sha256Size:], nil
+}
+
+// CreateX25519KeyExchangeMessage creates an authenticated key exchange message
+func CreateX25519KeyExchangeMessage(recipientPublicKey, senderPrivateKey string, payload []byte) ([]byte, error) {
+	// Create HMAC of the payload
+	privateKeyDigest := sha256.Sum256([]byte(senderPrivateKey))
+	mac := hmac.New(sha256.New, privateKeyDigest[:])
+	mac.Write(payload)
+
+	// Prepend HMAC to payload
+	message := append(mac.Sum(nil), payload...)
+
+	// Encrypt the authenticated message
+	return X25519EncryptWithRecipient(recipientPublicKey, message)
+}
+
+// X25519KeyGenerator implements KeyGenerator for X25519 encryption
+type X25519KeyGenerator struct{}
+
+// GenerateSymmetricKey generates a new symmetric key
+func (g *X25519KeyGenerator) GenerateSymmetricKey() ([]byte, error) {
+	key := RandomSymmetricKey()
+	return key[:], nil
+}
+
+// GenerateAsymmetricKeyPair generates a new X25519 key pair
+func (g *X25519KeyGenerator) GenerateAsymmetricKeyPair() (publicKey, privateKey string, err error) {
+	keyPair, err := GenerateX25519KeyPair()
+	if err != nil {
+		return "", "", err
+	}
+	return keyPair.Public, keyPair.Private, nil
+}
+
+// SecureRandom generates cryptographically secure random bytes
+func SecureRandom(n int) ([]byte, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return nil, err
+	}
+	return b, nil
+}
