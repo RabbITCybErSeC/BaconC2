@@ -46,32 +46,38 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmitSuccess, onSubmitError })
 
   return (
     <form onSubmit={handleSubmit} className="px-5 py-7">
-      <label htmlFor="username" className="font-semibold text-sm text-gray-600 dark:text-gray-200 pb-1 block">
-        Username
-      </label>
-      <input
-        id="username"
-        name="username"
-        type="text"
-        required
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        disabled={isLoading}
-        className="border rounded-lg px-3 py-2 mt-1 mb-5 text-sm w-full dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      <label htmlFor="password" className="font-semibold text-sm text-gray-600 dark:text-gray-200 pb-1 block">
-        Password
-      </label>
-      <input
-        id="password"
-        name="password"
-        type="password"
-        required
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={isLoading}
-        className="border rounded-lg px-3 py-2 mt-1 mb-5 text-sm w-full dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div className="relative mb-5">
+        <input
+          id="username"
+          name="username"
+          type="text"
+          required
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isLoading}
+          className="border rounded-lg px-3 py-2 pt-5 pb-2 text-sm w-full dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 peer"
+          placeholder=" "
+        />
+        <label htmlFor="username" className="absolute text-sm font-semibold text-gray-600 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-3 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3 bg-white dark:bg-slate-700 px-1">
+          Username
+        </label>
+      </div>
+      <div className="relative mb-5">
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={isLoading}
+          className="border rounded-lg px-3 py-2 pt-5 pb-2 text-sm w-full dark:bg-slate-700 dark:text-gray-100 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 peer"
+          placeholder=" "
+        />
+        <label htmlFor="password" className="absolute text-sm font-semibold text-gray-600 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-3 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3 bg-white dark:bg-slate-700 px-1">
+          Password
+        </label>
+      </div>
       <button
         type="submit"
         disabled={isLoading}
