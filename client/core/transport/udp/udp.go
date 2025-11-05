@@ -1,4 +1,4 @@
-package transport
+package udp
 
 import (
 	"encoding/json"
@@ -23,7 +23,7 @@ type UDPTransport struct {
 	mu             sync.Mutex
 }
 
-func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue) ITransportProtocol {
+func NewUDPTransport(host string, port int, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue) interface{} {
 	return &UDPTransport{
 		serverHost:     host,
 		serverPort:     port,
