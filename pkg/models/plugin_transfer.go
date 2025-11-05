@@ -1,6 +1,5 @@
 package models
 
-// PluginTransferMetadata contains metadata about a plugin to be transferred
 type PluginTransferMetadata struct {
 	Name        string `json:"name"`
 	Hash        string `json:"hash"`
@@ -9,13 +8,11 @@ type PluginTransferMetadata struct {
 	TotalChunks int    `json:"total_chunks"`
 }
 
-// PluginChunkRequest is used by the client to request a specific chunk
 type PluginChunkRequest struct {
 	PluginName string `json:"plugin_name"`
 	ChunkIndex int    `json:"chunk_index"`
 }
 
-// PluginChunkResponse contains a chunk of plugin data
 type PluginChunkResponse struct {
 	PluginName  string `json:"plugin_name"`
 	ChunkIndex  int    `json:"chunk_index"`

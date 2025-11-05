@@ -13,7 +13,7 @@ type PluginRegistry struct {
 	mu      sync.RWMutex
 	plugins map[string]*PluginEntry
 	order   []string // Track load order for dependency management
-	loader  *NativePluginLoader
+	loader  IPluginLoader
 }
 
 // PluginEntry wraps a plugin with additional metadata
@@ -24,7 +24,7 @@ type PluginEntry struct {
 }
 
 // NewPluginRegistry creates a new plugin registry
-func NewPluginRegistry(loader *NativePluginLoader) *PluginRegistry {
+func NewPluginRegistry(loader IPluginLoader) *PluginRegistry {
 	return &PluginRegistry{
 		plugins: make(map[string]*PluginEntry),
 		order:   make([]string, 0),
@@ -107,9 +107,15 @@ func (r *PluginRegistry) LoadFromBytes(name string, data []byte, ctx *PluginCont
 	}
 
 	// Register the plugin
+	filePath := ""
+	if nativeLoader, ok := r.loader.(*NativePluginLoader); ok {
+		filePath = nativeLoader.GetPluginDir() + "/" + name + ".so"
+	} else {
+		filePath = name // For in-memory loader, just use the name
+	}
 	entry := &PluginEntry{
 		Plugin:   plugin,
-		FilePath: r.loader.GetPluginDir() + "/" + name + ".so",
+		FilePath: filePath,
 		LoadedAt: time.Now(),
 	}
 
@@ -256,7 +262,15 @@ func (r *PluginRegistry) GetByCapability(capability PluginCapability) []IPlugin 
 	return plugins
 }
 
-// GetLoader returns the native plugin loader
-func (r *PluginRegistry) GetLoader() *NativePluginLoader {
+// GetLoader returns the plugin loader
+func (r *PluginRegistry) GetLoader() IPluginLoader {
 	return r.loader
+}
+
+// GetNativeLoader returns the native plugin loader if available
+func (r *PluginRegistry) GetNativeLoader() *NativePluginLoader {
+	if nativeLoader, ok := r.loader.(*NativePluginLoader); ok {
+		return nativeLoader
+	}
+	return nil
 }

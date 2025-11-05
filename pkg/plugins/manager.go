@@ -18,13 +18,29 @@ type PluginManager struct {
 	config          map[string]interface{}
 }
 
-// NewPluginManager creates a new plugin manager
+// NewPluginManager creates a new plugin manager with filesystem-based loader
 func NewPluginManager(
 	pluginDir string,
 	commandRegistry *command_handler.CommandHandlerRegistry,
 	agentState command_handler.IAgentState,
 ) *PluginManager {
 	loader := NewNativePluginLoader(pluginDir)
+	registry := NewPluginRegistry(loader)
+
+	return &PluginManager{
+		registry:        registry,
+		commandRegistry: commandRegistry,
+		agentState:      agentState,
+		config:          make(map[string]interface{}),
+	}
+}
+
+// NewInMemoryPluginManager creates a new plugin manager with in-memory loader (no filesystem access)
+func NewInMemoryPluginManager(
+	commandRegistry *command_handler.CommandHandlerRegistry,
+	agentState command_handler.IAgentState,
+) *PluginManager {
+	loader := NewInMemoryPluginLoader()
 	registry := NewPluginRegistry(loader)
 
 	return &PluginManager{
@@ -224,8 +240,14 @@ func (m *PluginManager) Shutdown() error {
 }
 
 // ScanAndLoadPlugins scans the plugin directory and loads all plugins
+// Only works with filesystem-based loaders (NativePluginLoader)
 func (m *PluginManager) ScanAndLoadPlugins() error {
-	plugins, err := m.registry.GetLoader().ScanPluginDirectory()
+	nativeLoader := m.registry.GetNativeLoader()
+	if nativeLoader == nil {
+		return fmt.Errorf("ScanAndLoadPlugins only supported for filesystem-based loaders")
+	}
+
+	plugins, err := nativeLoader.ScanPluginDirectory()
 	if err != nil {
 		return fmt.Errorf("failed to scan plugin directory: %w", err)
 	}
@@ -236,6 +258,37 @@ func (m *PluginManager) ScanAndLoadPlugins() error {
 		}
 	}
 
+	return nil
+}
+
+// RegisterPluginInMemory registers a pre-instantiated plugin in memory (for in-memory loaders only)
+func (m *PluginManager) RegisterPluginInMemory(name string, plugin IPlugin) error {
+	inMemoryLoader, ok := m.registry.GetLoader().(*InMemoryPluginLoader)
+	if !ok {
+		return fmt.Errorf("RegisterPluginInMemory only supported for in-memory loaders")
+	}
+
+	if err := inMemoryLoader.RegisterPlugin(name, plugin); err != nil {
+		return err
+	}
+
+	// Initialize and register the plugin with the command registry
+	ctx := &PluginContext{
+		AgentState: m.agentState,
+		Registry:   m.commandRegistry,
+		Config:     m.config,
+	}
+
+	if err := plugin.Initialize(ctx); err != nil {
+		return fmt.Errorf("failed to initialize plugin '%s': %w", name, err)
+	}
+
+	// Register command handler
+	if err := m.registerCommandHandler(plugin); err != nil {
+		return fmt.Errorf("failed to register command handler: %w", err)
+	}
+
+	logging.Info("Plugin registered in memory: %s", name)
 	return nil
 }
 

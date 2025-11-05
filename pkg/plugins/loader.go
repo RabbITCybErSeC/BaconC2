@@ -14,10 +14,10 @@ import (
 
 // NativePluginLoader handles loading and unloading of native Go plugins (.so files)
 type NativePluginLoader struct {
-	mu             sync.RWMutex
-	loadedPlugins  map[string]*plugin.Plugin
-	pluginDir      string
-	instances      map[string]IPlugin
+	mu            sync.RWMutex
+	loadedPlugins map[string]*plugin.Plugin
+	instances     map[string]IPlugin
+	pluginDir     string
 }
 
 // NewNativePluginLoader creates a new plugin loader
@@ -59,7 +59,7 @@ func (l *NativePluginLoader) LoadFromFile(filePath string) (IPlugin, error) {
 
 	// Create plugin instance
 	instance := newPlugin()
-	
+
 	l.loadedPlugins[filePath] = p
 	l.instances[filePath] = instance
 
@@ -116,7 +116,7 @@ func (l *NativePluginLoader) Unload(filePath string) error {
 func (l *NativePluginLoader) GetInstance(filePath string) (IPlugin, bool) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	instance, exists := l.instances[filePath]
 	return instance, exists
 }
@@ -125,7 +125,7 @@ func (l *NativePluginLoader) GetInstance(filePath string) (IPlugin, bool) {
 func (l *NativePluginLoader) ListLoaded() []string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	paths := make([]string, 0, len(l.instances))
 	for path := range l.instances {
 		paths = append(paths, path)

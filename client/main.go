@@ -76,8 +76,7 @@ func main() {
 	commandRegistry.RegisterStatefulHandler(filesystem.NewPwdHandler())
 	commandRegistry.RegisterStatefulHandler(filesystem.NewLsHandler())
 
-	pluginDir := "./plugins"
-	pluginManager := plugins.NewPluginManager(pluginDir, commandRegistry, agentState)
+	pluginManager := plugins.NewInMemoryPluginManager(commandRegistry, agentState)
 
 	pluginCommands := clientplugins.NewPluginCommands(pluginManager, httpTransport)
 	commandRegistry.RegisterHandler(command_handler.CommandHandler{
@@ -100,11 +99,6 @@ func main() {
 		Name:    "plugin_info",
 		Handler: pluginCommands.HandlePluginInfo,
 	})
-
-	// Scan and load any existing plugins in the plugin directory
-	if err := pluginManager.ScanAndLoadPlugins(); err != nil {
-		logging.Warn("Failed to scan plugins: %v", err)
-	}
 
 	logging.Info("Plugin system initialized (%d plugins loaded)", pluginManager.GetRegistry().Count())
 
