@@ -1,4 +1,4 @@
-package transport
+package http
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/server/config"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	local_models "github.com/RabbITCybErSeC/BaconC2/server/models"
+	"github.com/RabbITCybErSeC/BaconC2/server/transport"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,19 +23,21 @@ const (
 )
 
 type HTTPServerTransport struct {
-	agentRepository db.IAgentRepository
-	commandQueue    queue.IServerCommandQueue
-	engine          *gin.Engine
-	server          *http.Server
-	httpConfig      config.AgentHTTPConfig
+	agentRepository   db.IAgentRepository
+	commandQueue      queue.IServerCommandQueue
+	engine            *gin.Engine
+	server            *http.Server
+	httpConfig        config.AgentHTTPConfig
+	pluginDataHandler *PluginDataHandler
 }
 
-func NewHTTPServerTransport(agentRepository db.IAgentRepository, commandQueue queue.IServerCommandQueue, httpConfig config.AgentHTTPConfig, engine *gin.Engine) ITransportProtocol {
+func NewHTTPServerTransport(agentRepository db.IAgentRepository, commandQueue queue.IServerCommandQueue, httpConfig config.AgentHTTPConfig, engine *gin.Engine, pluginProvider transport.IPluginDataProvider) transport.ITransportProtocol {
 	as := &HTTPServerTransport{
-		agentRepository: agentRepository,
-		commandQueue:    commandQueue,
-		engine:          engine,
-		httpConfig:      httpConfig,
+		agentRepository:   agentRepository,
+		commandQueue:      commandQueue,
+		engine:            engine,
+		httpConfig:        httpConfig,
+		pluginDataHandler: NewPluginDataHandler(pluginProvider),
 	}
 
 	as.server = &http.Server{
@@ -53,6 +56,9 @@ func (as *HTTPServerTransport) registerAgentRoutes() {
 		agentAPI.POST("/register", as.handleRegister)
 		agentAPI.POST("/beacon", as.handleBeacon)
 		agentAPI.POST("/results", as.handleCommandResult)
+		
+		agentAPI.GET("/plugins/metadata", as.pluginDataHandler.HandlePluginMetadata)
+		agentAPI.POST("/plugins/chunk", as.pluginDataHandler.HandlePluginChunk)
 	}
 }
 
@@ -181,48 +187,6 @@ func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "received"})
 }
-
-// func (as *HTTPServerTransport) handleAddCommand(c *gin.Context) {
-// 	var rawCmd models.RawCommand
-// 	if err := c.ShouldBindJSON(&rawCmd); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format: " + err.Error()})
-// 		return
-// 	}
-// 	if rawCmd.Command == "" {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Command field is required and cannot be empty"})
-// 		return
-// 	}
-
-// 	agentID := c.Query("id")
-// 	if agentID == "" {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Agent ID required"})
-// 		return
-// 	}
-
-// 	_, err := as.agentRepository.GetAgent(c.Request.Context(), agentID)
-// 	if err != nil {
-// 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
-// 		return
-// 	}
-
-// 	agentCmd := local_models.AgentCommand{
-// 		AgentID: agentID,
-// 		Command: models.Command{
-// 			ID:      uuid.New().String(),
-// 			Command: rawCmd.Command,
-// 			Status:  models.CommandStatusPending,
-// 		},
-// 		CreatedAt: time.Now(),
-// 		UpdatedAt: time.Now(),
-// 	}
-
-// 	if err := as.agentRepository.SaveCommand(c.Request.Context(), &agentCmd); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"status": "queued", "id": agentCmd.ID})
-// }
 
 func (as *HTTPServerTransport) Start() error {
 	log.Printf("Starting HTTP transport on port %d", as.httpConfig.Port)

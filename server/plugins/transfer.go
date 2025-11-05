@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
@@ -19,35 +18,16 @@ func NewPluginTransferManager(compiler *PluginCompiler) *PluginTransferManager {
 	}
 }
 
-func (m *PluginTransferManager) PreparePluginForTransfer(pluginName string) (string, error) {
-	// Read the compiled plugin
-	data, err := m.compiler.ReadCompiledPlugin(pluginName)
-	if err != nil {
-		return "", fmt.Errorf("failed to read plugin: %w", err)
-	}
-
-	// Encode as base64 for safe transfer
-	encoded := base64.StdEncoding.EncodeToString(data)
-
-	logging.Info("Prepared plugin '%s' for transfer (%d bytes)", pluginName, len(data))
-	return encoded, nil
-}
-
 func (m *PluginTransferManager) CreatePluginLoadCommand(pluginName string) (*models.Command, error) {
-
-	encodedData, err := m.PreparePluginForTransfer(pluginName)
-	if err != nil {
-		return nil, err
-	}
-
 	pluginPath := m.compiler.GetPluginPath(pluginName)
 	hash, err := plugins.CalculateHash(pluginPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate hash: %w", err)
 	}
 
-	cmd := models.NewCommand("plugin_install", models.CommandTypeInternal, pluginName, encodedData, hash)
+	cmd := models.NewCommand("plugin_install", models.CommandTypeInternal, pluginName, hash)
 
+	logging.Info("Created plugin install command for '%s' (hash: %s)", pluginName, hash)
 	return cmd, nil
 }
 

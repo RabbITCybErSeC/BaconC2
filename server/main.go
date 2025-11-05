@@ -16,6 +16,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
 	"github.com/RabbITCybErSeC/BaconC2/server/service"
 	"github.com/RabbITCybErSeC/BaconC2/server/transport"
+	httptransport "github.com/RabbITCybErSeC/BaconC2/server/transport/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,7 +35,8 @@ func main() {
 
 	if cfg.AgentHTTPConfig.Enabled {
 		agentAPIEngine := gin.Default()
-		httpTransport := transport.NewHTTPServerTransport(agentRepo, commandQueue, cfg.AgentHTTPConfig, agentAPIEngine)
+		pluginProvider := transport.NewPluginDataProvider("bin")
+		httpTransport := httptransport.NewHTTPServerTransport(agentRepo, commandQueue, cfg.AgentHTTPConfig, agentAPIEngine, pluginProvider)
 		server.AddTransport(httpTransport)
 	}
 
