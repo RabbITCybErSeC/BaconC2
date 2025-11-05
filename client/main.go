@@ -17,8 +17,8 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/client/core/executor"
 	clientplugins "github.com/RabbITCybErSeC/BaconC2/client/core/plugins"
 	"github.com/RabbITCybErSeC/BaconC2/client/core/state"
-	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	httptransport "github.com/RabbITCybErSeC/BaconC2/client/core/transport/http"
+	wstransport "github.com/RabbITCybErSeC/BaconC2/client/core/transport/websocket"
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers/filesystem"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
@@ -62,7 +62,7 @@ func main() {
 	encoderChain := encoders.NewChainEncoder([]encoders.Encoder{encoders.DummyEncoder{}})
 
 	httpTransport := httptransport.NewHTTPClientTransport(cfg.ServerURL, cfg.AgentID, cmdQueue, resultQueue, encoderChain)
-	wsTransport := transport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
+	wsTransport := wstransport.NewWebSocketTransport(cfg.ServerURL, cfg.AgentID)
 
 	agentState := state.NewAgentState()
 
