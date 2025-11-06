@@ -35,7 +35,7 @@ func main() {
 
 	if cfg.AgentHTTPConfig.Enabled {
 		agentAPIEngine := gin.Default()
-		pluginProvider := transport.NewPluginDataProvider("bin")
+		pluginProvider := transport.NewPluginDataProvider(cfg.PluginConfig.PluginDir)
 		httpTransport := httptransport.NewHTTPServerTransport(agentRepo, commandQueue, cfg.AgentHTTPConfig, agentAPIEngine, pluginProvider)
 		server.AddTransport(httpTransport)
 	}
