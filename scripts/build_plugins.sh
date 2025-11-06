@@ -8,10 +8,9 @@
 set -e
 
 PLUGIN_DIR="./plugins"
-OUTPUT_DIR="./build_plugins"
+OUTPUT_DIR="./plugin_builds"
 BUILD_EXAMPLES=false
 GO_VERSION=$(go version | awk '{print $3}')
-
 
 for arg in "$@"; do
     case $arg in
@@ -29,12 +28,10 @@ echo "Output Directory: $OUTPUT_DIR"
 echo "Build Examples: $BUILD_EXAMPLES"
 echo ""
 
-
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
     echo "ERROR: Go plugins are not supported on Windows"
     exit 1
 fi
-
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -50,44 +47,37 @@ compile_plugins_from_dir() {
         if [ -d "$plugin_path" ]; then
             plugin_name=$(basename "$plugin_path")
             
-            # Skip examples directory if not building examples
             if [ "$plugin_name" = "examples" ] && [ "$skip_examples" = "true" ]; then
                 continue
             fi
             
-            # If this is the examples directory, recursively compile its contents
             if [ "$plugin_name" = "examples" ]; then
                 compile_plugins_from_dir "$plugin_path" "false"
                 continue
             fi
             
-            if ! ls "$plugin_path"/*.go 1> /dev/null 2>&1; then
-                continue
-            fi
-            
-            ((plugin_count++))
-            
-            echo "[$plugin_count] Compiling plugin: $plugin_name"
-            
-            # Build the plugin
-            if go build -buildmode=plugin \
-                -o "$OUTPUT_DIR/$plugin_name.so" \
-                "$plugin_path"/*.go 2>&1; then
+            if ls "$plugin_path"/*.go 1> /dev/null 2>&1; then
+                ((plugin_count++))
                 
-                # Get file size
-                size=$(ls -lh "$OUTPUT_DIR/$plugin_name.so" | awk '{print $5}')
-                echo "    ✓ Success ($size)"
-                ((success_count++))
-            else
-                echo "    ✗ Failed"
-                ((fail_count++))
+                echo "[$plugin_count] Compiling plugin: $plugin_name"
+                
+                if go build -buildmode=plugin \
+                    -o "$OUTPUT_DIR/$plugin_name.so" \
+                    "$plugin_path"/*.go 2>&1; then
+                    
+                    size=$(ls -lh "$OUTPUT_DIR/$plugin_name.so" | awk '{print $5}')
+                    echo "    ✓ Success ($size)"
+                    ((success_count++))
+                else
+                    echo "    ✗ Failed"
+                    ((fail_count++))
+                fi
+                echo ""
             fi
-            echo ""
         fi
     done
 }
 
-# Compile plugins, optionally including examples
 if [ "$BUILD_EXAMPLES" = "true" ]; then
     compile_plugins_from_dir "$PLUGIN_DIR" "false"
 else
