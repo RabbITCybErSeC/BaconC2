@@ -2,17 +2,31 @@
 
 # BaconC2 Plugin Build Script
 # Compiles all plugins in the plugins/ directory
+# Usage: ./build_plugins [--examples]
+#   --examples: Also compile example plugins
 
 set -e
 
 PLUGIN_DIR="./plugins"
-OUTPUT_DIR="./compiled_plugins"
+OUTPUT_DIR="./build_plugins"
+BUILD_EXAMPLES=false
 GO_VERSION=$(go version | awk '{print $3}')
+
+
+for arg in "$@"; do
+    case $arg in
+        --examples)
+            BUILD_EXAMPLES=true
+            shift
+            ;;
+    esac
+done
 
 echo "=== BaconC2 Plugin Builder ==="
 echo "Go Version: $GO_VERSION"
 echo "Plugin Directory: $PLUGIN_DIR"
 echo "Output Directory: $OUTPUT_DIR"
+echo "Build Examples: $BUILD_EXAMPLES"
 echo ""
 
 
@@ -28,34 +42,57 @@ plugin_count=0
 success_count=0
 fail_count=0
 
-for plugin_path in "$PLUGIN_DIR"/*; do
-    if [ -d "$plugin_path" ]; then
-        plugin_name=$(basename "$plugin_path")
-        
-        if [ ! -f "$plugin_path"/*.go ]; then
-            continue
-        fi
-        
-        ((plugin_count++))
-        
-        echo "[$plugin_count] Compiling plugin: $plugin_name"
-        
-        # Build the plugin
-        if go build -buildmode=plugin \
-            -o "$OUTPUT_DIR/$plugin_name.so" \
-            "$plugin_path"/*.go 2>&1; then
+compile_plugins_from_dir() {
+    local source_dir=$1
+    local skip_examples=$2
+    
+    for plugin_path in "$source_dir"/*; do
+        if [ -d "$plugin_path" ]; then
+            plugin_name=$(basename "$plugin_path")
             
-            # Get file size
-            size=$(ls -lh "$OUTPUT_DIR/$plugin_name.so" | awk '{print $5}')
-            echo "    ✓ Success ($size)"
-            ((success_count++))
-        else
-            echo "    ✗ Failed"
-            ((fail_count++))
+            # Skip examples directory if not building examples
+            if [ "$plugin_name" = "examples" ] && [ "$skip_examples" = "true" ]; then
+                continue
+            fi
+            
+            # If this is the examples directory, recursively compile its contents
+            if [ "$plugin_name" = "examples" ]; then
+                compile_plugins_from_dir "$plugin_path" "false"
+                continue
+            fi
+            
+            if [ ! -f "$plugin_path"/*.go ]; then
+                continue
+            fi
+            
+            ((plugin_count++))
+            
+            echo "[$plugin_count] Compiling plugin: $plugin_name"
+            
+            # Build the plugin
+            if go build -buildmode=plugin \
+                -o "$OUTPUT_DIR/$plugin_name.so" \
+                "$plugin_path"/*.go 2>&1; then
+                
+                # Get file size
+                size=$(ls -lh "$OUTPUT_DIR/$plugin_name.so" | awk '{print $5}')
+                echo "    ✓ Success ($size)"
+                ((success_count++))
+            else
+                echo "    ✗ Failed"
+                ((fail_count++))
+            fi
+            echo ""
         fi
-        echo ""
-    fi
-done
+    done
+}
+
+# Compile plugins, optionally including examples
+if [ "$BUILD_EXAMPLES" = "true" ]; then
+    compile_plugins_from_dir "$PLUGIN_DIR" "false"
+else
+    compile_plugins_from_dir "$PLUGIN_DIR" "true"
+fi
 
 echo "=== Build Summary ==="
 echo "Total plugins: $plugin_count"

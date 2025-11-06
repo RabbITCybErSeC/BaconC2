@@ -56,7 +56,7 @@ func NewServerConfig() *ServerConfig {
 	agentPort := flag.Int("agent-port", getIntEnv("AGENT_PORT", 8081), "Agent server port")
 	udpPort := flag.Int("udp-port", getIntEnv("UDP_PORT", 8081), "UDP server port")
 	enableUDP := flag.Bool("enable-udp", getBoolEnv("ENABLE_UDP", false), "Enable UDP transport")
-	pluginDir := flag.String("plugin-dir", getEnv("PLUGIN_DIR", "bin"), "Plugin directory path")
+	pluginDir := flag.String("plugin-dir", getEnv("PLUGIN_DIR", "build_plugins"), "Plugin directory path")
 	environment := flag.String("environment", getEnv("ENVIRONMENT", "development"), "Environment (development/production)")
 	dbPath := flag.String("db-path", getEnv("DB_PATH", "agents.db"), "Database file path")
 	maxAgents := flag.Int("max-agents", getIntEnv("MAX_AGENTS", 100), "Maximum number of agents")
