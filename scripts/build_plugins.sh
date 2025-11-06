@@ -61,7 +61,7 @@ compile_plugins_from_dir() {
                 continue
             fi
             
-            if [ ! -f "$plugin_path"/*.go ]; then
+            if ! ls "$plugin_path"/*.go 1> /dev/null 2>&1; then
                 continue
             fi
             
