@@ -66,7 +66,7 @@ compile_plugins_from_dir() {
             fi
             
             if ls "$plugin_path"/*.go 1> /dev/null 2>&1; then
-                ((plugin_count++))
+                plugin_count=$((plugin_count + 1))
                 
                 echo ""
                 echo "[$plugin_count] Found plugin: $plugin_name"
@@ -89,20 +89,25 @@ compile_plugins_from_dir() {
                     
                     # Extract metadata
                     echo "    → Extracting metadata..."
-                    if go run "$SCRIPT_DIR/extract_plugin_metadata.go" \
+                    metadata_output=$(go run "$SCRIPT_DIR/extract_plugin_metadata.go" \
                         "$OUTPUT_DIR/$plugin_name.so" \
-                        "$OUTPUT_DIR/$plugin_name.json" 2>&1; then
+                        "$OUTPUT_DIR/$plugin_name.json" 2>&1)
+                    metadata_status=$?
+                    
+                    if [ $metadata_status -eq 0 ]; then
                         echo "    ✓ Metadata extracted"
-                        ((success_count++))
+                        success_count=$((success_count + 1))
                     else
                         echo "    ⚠ Metadata extraction failed (plugin still usable)"
-                        ((success_count++))
+                        echo "    Error output:"
+                        echo "$metadata_output" | sed 's/^/      /'
+                        success_count=$((success_count + 1))
                     fi
                 else
                     echo "    ✗ Compilation failed"
                     echo "    Error output:"
                     echo "$build_output" | sed 's/^/      /'
-                    ((fail_count++))
+                    fail_count=$((fail_count + 1))
                 fi
                 echo ""
             fi
