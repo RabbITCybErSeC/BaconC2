@@ -2,6 +2,7 @@ package api
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -113,14 +114,33 @@ func (h *FrontendHandler) getLoadedPlugins() ([]plugins.PluginInfo, error) {
 			return nil
 		}
 
-		// Calculate file hash
+		pluginName := strings.TrimSuffix(info.Name(), ".so")
+		jsonPath := filepath.Join(h.pluginDir, pluginName+".json")
+
+		// Try to read metadata from JSON file first
+		if jsonData, err := os.ReadFile(jsonPath); err == nil {
+			var pluginInfo plugins.PluginInfo
+			if err := json.Unmarshal(jsonData, &pluginInfo); err == nil {
+				// Update file size and hash from actual file
+				pluginInfo.FileSize = info.Size()
+				hash, _ := calculateFileHash(path)
+				pluginInfo.Hash = hash
+				pluginInfo.Metadata.Hash = hash
+				pluginInfo.Metadata.LoadedAt = info.ModTime()
+				pluginInfo.FilePath = path
+				pluginInfo.Metadata.FilePath = path
+				
+				pluginInfos = append(pluginInfos, pluginInfo)
+				return nil
+			}
+		}
+
+		// Fallback: Create generic metadata if JSON doesn't exist or is invalid
 		hash, err := calculateFileHash(path)
 		if err != nil {
 			return fmt.Errorf("failed to calculate hash for %s: %w", path, err)
 		}
 
-		// Create plugin metadata
-		pluginName := strings.TrimSuffix(info.Name(), ".so")
 		metadata := plugins.PluginMetadata{
 			Name:        pluginName,
 			Version:     "unknown",
