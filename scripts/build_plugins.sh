@@ -45,9 +45,12 @@ compile_plugins_from_dir() {
     local source_dir=$1
     local skip_examples=$2
     
+    echo "Scanning directory: $source_dir"
+    
     for plugin_path in "$source_dir"/*; do
         if [ -d "$plugin_path" ]; then
             plugin_name=$(basename "$plugin_path")
+            echo "  Found directory: $plugin_name"
             
             if [ "$plugin_name" = "examples" ] && [ "$skip_examples" = "true" ]; then
                 continue
@@ -61,6 +64,7 @@ compile_plugins_from_dir() {
             if ls "$plugin_path"/*.go 1> /dev/null 2>&1; then
                 ((plugin_count++))
                 
+                echo ""
                 echo "[$plugin_count] Found plugin: $plugin_name"
                 echo "    Source: $plugin_path"
                 for go_file in "$plugin_path"/*.go; do
