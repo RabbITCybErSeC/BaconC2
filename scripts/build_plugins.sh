@@ -10,7 +10,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PLUGIN_DIR="$PROJECT_ROOT/plugins"
-OUTPUT_DIR="$PROJECT_ROOT/plugin_builds"
+OUTPUT_DIR="$PROJECT_ROOT/build_plugins"
 BUILD_EXAMPLES=false
 GO_VERSION=$(go version | awk '{print $3}')
 
@@ -68,8 +68,19 @@ compile_plugins_from_dir() {
                     "$plugin_path"/*.go 2>&1; then
                     
                     size=$(ls -lh "$OUTPUT_DIR/$plugin_name.so" | awk '{print $5}')
-                    echo "    ✓ Success ($size)"
-                    ((success_count++))
+                    echo "    ✓ Compiled ($size)"
+                    
+                    # Extract metadata
+                    echo "    → Extracting metadata..."
+                    if go run "$SCRIPT_DIR/extract_plugin_metadata.go" \
+                        "$OUTPUT_DIR/$plugin_name.so" \
+                        "$OUTPUT_DIR/$plugin_name.json" 2>&1; then
+                        echo "    ✓ Metadata extracted"
+                        ((success_count++))
+                    else
+                        echo "    ⚠ Metadata extraction failed (plugin still usable)"
+                        ((success_count++))
+                    fi
                 else
                     echo "    ✗ Failed"
                     ((fail_count++))
