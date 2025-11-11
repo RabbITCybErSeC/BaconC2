@@ -1,2 +1,4 @@
-plugin_builds/
+build_plugins/
 bin/
+*.so
+*.json
