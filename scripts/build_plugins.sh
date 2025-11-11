@@ -7,6 +7,10 @@
 
 set -e
 
+if [ "${DEBUG:-0}" = "1" ]; then
+    set -x
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PLUGIN_DIR="$PROJECT_ROOT/plugins"
@@ -101,12 +105,22 @@ compile_plugins_from_dir() {
     done
 }
 
+echo "Starting plugin compilation..."
+echo "Checking if plugin directory exists: $PLUGIN_DIR"
+if [ ! -d "$PLUGIN_DIR" ]; then
+    echo "ERROR: Plugin directory does not exist: $PLUGIN_DIR"
+    exit 1
+fi
+
 if [ "$BUILD_EXAMPLES" = "true" ]; then
+    echo "Mode: Building all plugins including examples"
     compile_plugins_from_dir "$PLUGIN_DIR" "false"
 else
+    echo "Mode: Building production plugins only (skipping examples)"
     compile_plugins_from_dir "$PLUGIN_DIR" "true"
 fi
 
+echo ""
 echo "=== Build Summary ==="
 echo "Total plugins: $plugin_count"
 echo "Successful: $success_count"
