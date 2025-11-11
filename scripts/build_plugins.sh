@@ -7,8 +7,10 @@
 
 set -e
 
-PLUGIN_DIR="./plugins"
-OUTPUT_DIR="./plugin_builds"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PLUGIN_DIR="$PROJECT_ROOT/plugins"
+OUTPUT_DIR="$PROJECT_ROOT/plugin_builds"
 BUILD_EXAMPLES=false
 GO_VERSION=$(go version | awk '{print $3}')
 
