@@ -6,13 +6,10 @@ import {
   Home,
   Server,
   Network,
-  ShieldCheck,
   Settings,
   UserCircle,
-  AlertTriangle,
   Database,
   Terminal,
-  GitBranch,
   FileText,
   Puzzle
 } from "lucide-react";
@@ -49,6 +46,11 @@ export const navItems: NavItem[] = [
         icon: cloneIcon(<Server />),
         label: 'Active Agents',
         href: '/agents/active'
+      },
+      {
+        icon: cloneIcon(<Puzzle />),
+        label: 'Plugins',
+        href: '/plugins'
       }
     ]
   },
@@ -63,29 +65,9 @@ export const navItems: NavItem[] = [
     href: '/commands'
   },
   {
-    icon: cloneIcon(<AlertTriangle />),
-    label: 'Alerts',
-    href: '/alerts'
-  },
-  {
     icon: cloneIcon(<Database />),
     label: 'Data Collection',
     href: '/data'
-  },
-  {
-    icon: cloneIcon(<GitBranch />),
-    label: 'Payloads',
-    href: '/payloads'
-  },
-  {
-    icon: cloneIcon(<Puzzle />),
-    label: 'Plugins',
-    href: '/plugins'
-  },
-  {
-    icon: cloneIcon(<ShieldCheck />),
-    label: 'Security Policies',
-    href: '/policies'
   },
   {
     icon: cloneIcon(<FileText />),

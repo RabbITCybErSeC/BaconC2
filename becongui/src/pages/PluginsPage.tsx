@@ -136,7 +136,7 @@ const PluginsPage: React.FC = () => {
           {plugins.map((plugin) => (
             <div
               key={plugin.hash}
-              className="bg-white dark:bg-slate-800 shadow-md rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-lg transition-shadow duration-200"
+              className="bg-white dark:bg-slate-800 shadow-md rounded-sm border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-lg transition-shadow duration-200"
             >
               {/* Plugin header */}
               <div className="p-6 border-b border-gray-200 dark:border-slate-700">
