@@ -5,8 +5,6 @@
 # Usage: ./build_plugins [--examples]
 #   --examples: Also compile example plugins
 
-set -e
-
 if [ "${DEBUG:-0}" = "1" ]; then
     set -x
 fi
@@ -22,7 +20,6 @@ for arg in "$@"; do
     case $arg in
         --examples)
             BUILD_EXAMPLES=true
-            shift
             ;;
     esac
 done
@@ -87,22 +84,23 @@ compile_plugins_from_dir() {
                     size=$(ls -lh "$OUTPUT_DIR/$plugin_name.so" | awk '{print $5}')
                     echo "    ✓ Compiled ($size)"
                     
-                    # Extract metadata
-                    echo "    → Extracting metadata..."
-                    metadata_output=$(go run "$SCRIPT_DIR/extract_plugin_metadata.go" \
-                        "$OUTPUT_DIR/$plugin_name.so" \
-                        "$OUTPUT_DIR/$plugin_name.json" 2>&1)
-                    metadata_status=$?
-                    
-                    if [ $metadata_status -eq 0 ]; then
-                        echo "    ✓ Metadata extracted"
-                        success_count=$((success_count + 1))
-                    else
-                        echo "    ⚠ Metadata extraction failed (plugin still usable)"
-                        echo "    Error output:"
-                        echo "$metadata_output" | sed 's/^/      /'
-                        success_count=$((success_count + 1))
+                    # Extract metadata if extractor exists
+                    if [ -f "$SCRIPT_DIR/extract_plugin_metadata.go" ]; then
+                        echo "    → Extracting metadata..."
+                        metadata_output=$(go run "$SCRIPT_DIR/extract_plugin_metadata.go" \
+                            "$OUTPUT_DIR/$plugin_name.so" \
+                            "$OUTPUT_DIR/$plugin_name.json" 2>&1)
+                        metadata_status=$?
+                        
+                        if [ $metadata_status -eq 0 ]; then
+                            echo "    ✓ Metadata extracted"
+                        else
+                            echo "    ⚠ Metadata extraction failed (plugin still usable)"
+                            echo "    Error output:"
+                            echo "$metadata_output" | sed 's/^/      /'
+                        fi
                     fi
+                    success_count=$((success_count + 1))
                 else
                     echo "    ✗ Compilation failed"
                     echo "    Error output:"
