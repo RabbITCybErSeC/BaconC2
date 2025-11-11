@@ -13,7 +13,8 @@ import {
   Database,
   Terminal,
   GitBranch,
-  FileText
+  FileText,
+  Puzzle
 } from "lucide-react";
 
 export interface NavItem {
@@ -75,6 +76,11 @@ export const navItems: NavItem[] = [
     icon: cloneIcon(<GitBranch />),
     label: 'Payloads',
     href: '/payloads'
+  },
+  {
+    icon: cloneIcon(<Puzzle />),
+    label: 'Plugins',
+    href: '/plugins'
   },
   {
     icon: cloneIcon(<ShieldCheck />),

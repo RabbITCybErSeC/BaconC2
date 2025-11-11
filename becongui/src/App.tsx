@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import AgentInventoryPage from './pages/AgentInventoryPage.tsx';
+import PluginsPage from './pages/PluginsPage.tsx';
 import ProtectedRoute from './services/routedProtector.tsx';
 
 function App() {
@@ -18,6 +19,9 @@ function App() {
 
           {/* Agent Inventory Route */}
           <Route path="agents" element={<AgentInventoryPage />} />
+
+          {/* Plugins Route */}
+          <Route path="plugins" element={<PluginsPage />} />
 
           {/* Catch-all for unknown routes within the layout, redirects to agents */}
           <Route path="*" element={<Navigate to="/agents" replace />} />
