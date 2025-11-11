@@ -70,6 +70,11 @@ export const navItems: NavItem[] = [
     href: '/data'
   },
   {
+    icon: cloneIcon(<Puzzle />),
+    label: 'Plugins',
+    href: '/plugins'
+  },
+  {
     icon: cloneIcon(<FileText />),
     label: 'Logs',
     href: '/logs'

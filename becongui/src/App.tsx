@@ -17,11 +17,11 @@ function App() {
           {/* Redirect base path "/" to "/agents" */}
           <Route index element={<Navigate to="/agents" replace />} />
 
-          {/* Agent Routes */}
-          <Route path="agents">
-            <Route index element={<AgentInventoryPage />} />
-            <Route path="plugins" element={<PluginsPage />} />
-          </Route>
+          {/* Agent Inventory Route */}
+          <Route path="agents" element={<AgentInventoryPage />} />
+
+          {/* Plugins Route */}
+          <Route path="plugins" element={<PluginsPage />} />
 
           {/* Catch-all for unknown routes within the layout, redirects to agents */}
           <Route path="*" element={<Navigate to="/agents" replace />} />
