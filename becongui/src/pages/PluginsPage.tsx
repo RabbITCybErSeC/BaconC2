@@ -95,7 +95,7 @@ const PluginsPage: React.FC = () => {
       </div>
 
       {/* Error banner */}
-      {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
+      {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
       {/* Loading state */}
       {loading && (
