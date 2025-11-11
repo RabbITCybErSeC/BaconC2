@@ -77,9 +77,12 @@ compile_plugins_from_dir() {
                 
                 echo "    Compiling..."
                 
-                if go build -buildmode=plugin \
+                build_output=$(go build -buildmode=plugin \
                     -o "$OUTPUT_DIR/$plugin_name.so" \
-                    "$plugin_path"/*.go 2>&1; then
+                    "$plugin_path"/*.go 2>&1)
+                build_status=$?
+                
+                if [ $build_status -eq 0 ]; then
                     
                     size=$(ls -lh "$OUTPUT_DIR/$plugin_name.so" | awk '{print $5}')
                     echo "    ✓ Compiled ($size)"
@@ -96,7 +99,9 @@ compile_plugins_from_dir() {
                         ((success_count++))
                     fi
                 else
-                    echo "    ✗ Failed"
+                    echo "    ✗ Compilation failed"
+                    echo "    Error output:"
+                    echo "$build_output" | sed 's/^/      /'
                     ((fail_count++))
                 fi
                 echo ""
