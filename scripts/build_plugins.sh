@@ -61,7 +61,13 @@ compile_plugins_from_dir() {
             if ls "$plugin_path"/*.go 1> /dev/null 2>&1; then
                 ((plugin_count++))
                 
-                echo "[$plugin_count] Compiling plugin: $plugin_name"
+                echo "[$plugin_count] Found plugin: $plugin_name"
+                echo "    Source: $plugin_path"
+                for go_file in "$plugin_path"/*.go; do
+                    echo "      - $(basename "$go_file")"
+                done
+                
+                echo "    Compiling..."
                 
                 if go build -buildmode=plugin \
                     -o "$OUTPUT_DIR/$plugin_name.so" \
