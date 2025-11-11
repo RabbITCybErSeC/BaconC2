@@ -41,7 +41,7 @@ func main() {
 	}
 
 	ginEngine := gin.Default()
-	frontendHandler := api.NewFrontendHandler(agentRepo, ginEngine)
+	frontendHandler := api.NewFrontendHandler(agentRepo, ginEngine, cfg.PluginConfig.PluginDir)
 	generalHandler := api.NewGeneralApiHandler(agentRepo, ginEngine)
 
 	api.RegisterFrontendRoutes(frontendHandler, cfg)
