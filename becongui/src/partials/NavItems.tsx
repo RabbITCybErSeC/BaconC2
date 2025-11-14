@@ -47,11 +47,6 @@ export const navItems: NavItem[] = [
         label: 'Active Agents',
         href: '/agents/active'
       },
-      {
-        icon: cloneIcon(<Puzzle />),
-        label: 'Plugins',
-        href: '/plugins'
-      }
     ]
   },
   {
