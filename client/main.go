@@ -77,7 +77,7 @@ func main() {
 	commandRegistry.RegisterStatefulHandler(filesystem.NewPwdHandler())
 	commandRegistry.RegisterStatefulHandler(filesystem.NewLsHandler())
 
-	pluginManager := plugins.NewInMemoryPluginManager(commandRegistry, agentState)
+	pluginManager := plugins.NewDynamicPluginManager(commandRegistry, agentState)
 
 	// Plugin fetching is only available if the transport implements IPluginFetcher
 	// For now: Not all transports can support this (e.g., UDP, DNS, ICMP)

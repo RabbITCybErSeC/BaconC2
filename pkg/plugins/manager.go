@@ -35,12 +35,12 @@ func NewPluginManager(
 	}
 }
 
-// NewInMemoryPluginManager creates a new plugin manager with in-memory loader (no filesystem access)
-func NewInMemoryPluginManager(
+// NewDynamicPluginManager creates a plugin manager with dynamic loader for runtime plugin installation
+func NewDynamicPluginManager(
 	commandRegistry *command_handler.CommandHandlerRegistry,
 	agentState command_handler.IAgentState,
 ) *PluginManager {
-	loader := NewInMemoryPluginLoader()
+	loader := NewDynamicPluginLoader()
 	registry := NewPluginRegistry(loader)
 
 	return &PluginManager{
@@ -261,14 +261,14 @@ func (m *PluginManager) ScanAndLoadPlugins() error {
 	return nil
 }
 
-// RegisterPluginInMemory registers a pre-instantiated plugin in memory (for in-memory loaders only)
-func (m *PluginManager) RegisterPluginInMemory(name string, plugin IPlugin) error {
-	inMemoryLoader, ok := m.registry.GetLoader().(*InMemoryPluginLoader)
+// RegisterPluginDynamic registers a pre-instantiated plugin (for dynamic loaders only)
+func (m *PluginManager) RegisterPluginDynamic(name string, plugin IPlugin) error {
+	dynamicLoader, ok := m.registry.GetLoader().(*DynamicPluginLoader)
 	if !ok {
-		return fmt.Errorf("RegisterPluginInMemory only supported for in-memory loaders")
+		return fmt.Errorf("RegisterPluginDynamic only supported for dynamic loaders")
 	}
 
-	if err := inMemoryLoader.RegisterPlugin(name, plugin); err != nil {
+	if err := dynamicLoader.RegisterPlugin(name, plugin); err != nil {
 		return err
 	}
 
