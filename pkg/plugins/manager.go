@@ -274,7 +274,7 @@ func (m *PluginManager) getPluginNameFromPath(filePath string) string {
 	return filePath
 }
 
-// scanLuaPluginDirectory scans directory for .lua files
+// scanLuaPluginDirectory scans directory for plugin.lua files in subdirectories
 func scanLuaPluginDirectory(pluginDir string) ([]string, error) {
 	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
 		return []string{}, nil
@@ -287,11 +287,13 @@ func scanLuaPluginDirectory(pluginDir string) ([]string, error) {
 
 	plugins := make([]string, 0)
 	for _, entry := range entries {
-		if entry.IsDir() {
+		if !entry.IsDir() {
 			continue
 		}
-		if filepath.Ext(entry.Name()) == ".lua" {
-			plugins = append(plugins, filepath.Join(pluginDir, entry.Name()))
+		
+		pluginFile := filepath.Join(pluginDir, entry.Name(), "plugin.lua")
+		if _, err := os.Stat(pluginFile); err == nil {
+			plugins = append(plugins, pluginFile)
 		}
 	}
 

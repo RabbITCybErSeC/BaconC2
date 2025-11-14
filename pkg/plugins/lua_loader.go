@@ -95,7 +95,7 @@ func (l *LuaPluginLoader) loadFromBytesUnlocked(name string, data []byte) (IPlug
 	}
 
 	l.instances[name] = plugin
-	logging.Info("Loaded Lua plugin: %s", name)
+	logging.Info("Loaded Lua plugin from memory: %s (no filesystem access)", name)
 	return plugin, nil
 }
 

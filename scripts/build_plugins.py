@@ -24,15 +24,19 @@ def copy_lua_plugins(source_dir: Path, skip_examples: bool, output_dir: Path) ->
         return
     
     for item in sorted(source_dir.iterdir()):
-        if item.is_file() and item.suffix == '.lua':
-            print(f"Copying: {item.name}")
-            shutil.copy2(item, output_dir / item.name)
-            plugin_count += 1
-            success_count += 1
-        elif item.is_dir():
+        if item.is_dir():
             if item.name == "examples" and skip_examples:
                 continue
-            copy_lua_plugins(item, False, output_dir)
+            
+            plugin_file = item / "plugin.lua"
+            if plugin_file.exists():
+                output_name = f"{item.name}.lua"
+                print(f"Copying: {item.name}/plugin.lua -> {output_name}")
+                shutil.copy2(plugin_file, output_dir / output_name)
+                plugin_count += 1
+                success_count += 1
+            else:
+                copy_lua_plugins(item, False, output_dir)
 
 
 def show_help():

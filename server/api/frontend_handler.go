@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/RabbITCybErSeC/BaconC2/pkg/plugins"
 	"github.com/RabbITCybErSeC/BaconC2/server/db"
@@ -103,19 +102,20 @@ func (h *FrontendHandler) getLoadedPlugins() ([]plugins.PluginInfo, error) {
 
 	var pluginInfos []plugins.PluginInfo
 
-	// Walk through the plugin directory
+	// Walk through the plugin directory looking for plugin.lua files
 	err := filepath.Walk(h.pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Skip directories and non-.lua files
-		if info.IsDir() || !strings.HasSuffix(info.Name(), ".lua") {
+		// Only process plugin.lua files
+		if info.IsDir() || info.Name() != "plugin.lua" {
 			return nil
 		}
 
-		pluginName := strings.TrimSuffix(info.Name(), ".lua")
-		jsonPath := filepath.Join(h.pluginDir, pluginName+".json")
+		// Extract plugin name from parent directory
+		pluginName := filepath.Base(filepath.Dir(path))
+		jsonPath := filepath.Join(filepath.Dir(path), "metadata.json")
 
 		// Try to read metadata from JSON file first
 		if jsonData, err := os.ReadFile(jsonPath); err == nil {

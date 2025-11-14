@@ -35,20 +35,22 @@ copy_lua_plugins() {
     local skip_examples=$2
     
     for item in "$source_dir"/*; do
-        if [ -f "$item" ] && [[ "$item" == *.lua ]]; then
-            plugin_name=$(basename "$item")
-            echo "Copying: $plugin_name"
-            cp "$item" "$OUTPUT_DIR/"
-            plugin_count=$((plugin_count + 1))
-            success_count=$((success_count + 1))
-        elif [ -d "$item" ]; then
+        if [ -d "$item" ]; then
             dir_name=$(basename "$item")
             
             if [ "$dir_name" = "examples" ] && [ "$skip_examples" = "true" ]; then
                 continue
             fi
             
-            copy_lua_plugins "$item" "false"
+            plugin_file="$item/plugin.lua"
+            if [ -f "$plugin_file" ]; then
+                echo "Copying: $dir_name/plugin.lua"
+                cp "$plugin_file" "$OUTPUT_DIR/${dir_name}.lua"
+                plugin_count=$((plugin_count + 1))
+                success_count=$((success_count + 1))
+            else
+                copy_lua_plugins "$item" "false"
+            fi
         fi
     done
 }
