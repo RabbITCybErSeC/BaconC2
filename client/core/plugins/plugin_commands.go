@@ -98,7 +98,7 @@ func (pc *ClientPluginCommands) HandlePluginInstall(cmd models.Command) models.C
 		logging.Debug("Downloaded chunk %d/%d", i+1, metadata.TotalChunks)
 	}
 
-	actualHash := plugins.CalculateHashBytes(pluginData)
+	actualHash := fmt.Sprintf("%x", sha256.Sum256(pluginData))
 	if actualHash != metadata.Hash {
 		return models.CommandResult{
 			ID:         cmd.ID,
