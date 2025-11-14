@@ -90,7 +90,7 @@ func (h *FrontendHandler) handleGetPlugins(c *gin.Context) {
 	c.JSON(http.StatusOK, plugins)
 }
 
-// getLoadedPlugins scans the plugin directory and returns metadata for all .so files
+// getLoadedPlugins scans the plugin directory and returns metadata for all .lua files
 func (h *FrontendHandler) getLoadedPlugins() ([]plugins.PluginInfo, error) {
 	if h.pluginDir == "" {
 		return []plugins.PluginInfo{}, nil
@@ -109,12 +109,12 @@ func (h *FrontendHandler) getLoadedPlugins() ([]plugins.PluginInfo, error) {
 			return err
 		}
 
-		// Skip directories and non-.so files
-		if info.IsDir() || !strings.HasSuffix(info.Name(), ".so") {
+		// Skip directories and non-.lua files
+		if info.IsDir() || !strings.HasSuffix(info.Name(), ".lua") {
 			return nil
 		}
 
-		pluginName := strings.TrimSuffix(info.Name(), ".so")
+		pluginName := strings.TrimSuffix(info.Name(), ".lua")
 		jsonPath := filepath.Join(h.pluginDir, pluginName+".json")
 
 		// Try to read metadata from JSON file first

@@ -107,15 +107,9 @@ func (r *PluginRegistry) LoadFromBytes(name string, data []byte, ctx *PluginCont
 	}
 
 	// Register the plugin
-	filePath := ""
-	if nativeLoader, ok := r.loader.(*NativePluginLoader); ok {
-		filePath = nativeLoader.GetPluginDir() + "/" + name + ".so"
-	} else {
-		filePath = name // For in-memory loader, just use the name
-	}
 	entry := &PluginEntry{
 		Plugin:   plugin,
-		FilePath: filePath,
+		FilePath: name,
 		LoadedAt: time.Now(),
 	}
 
@@ -267,10 +261,10 @@ func (r *PluginRegistry) GetLoader() IPluginLoader {
 	return r.loader
 }
 
-// GetNativeLoader returns the native plugin loader if available
-func (r *PluginRegistry) GetNativeLoader() *NativePluginLoader {
-	if nativeLoader, ok := r.loader.(*NativePluginLoader); ok {
-		return nativeLoader
+// GetLuaLoader returns the Lua plugin loader if available
+func (r *PluginRegistry) GetLuaLoader() *LuaPluginLoader {
+	if luaLoader, ok := r.loader.(*LuaPluginLoader); ok {
+		return luaLoader
 	}
 	return nil
 }

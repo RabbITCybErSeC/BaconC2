@@ -31,7 +31,7 @@ func NewPluginDataProvider(pluginDir string) *PluginDataProvider {
 }
 
 func (p *PluginDataProvider) GetPluginMetadata(pluginName string) (*models.PluginTransferMetadata, error) {
-	pluginPath := filepath.Join(p.pluginDir, pluginName+".so")
+	pluginPath := filepath.Join(p.pluginDir, pluginName+".lua")
 	
 	fileInfo, err := os.Stat(pluginPath)
 	if err != nil {
@@ -65,7 +65,7 @@ func (p *PluginDataProvider) GetPluginMetadata(pluginName string) (*models.Plugi
 }
 
 func (p *PluginDataProvider) GetPluginChunk(pluginName string, chunkIndex int) (*models.PluginChunkResponse, error) {
-	pluginPath := filepath.Join(p.pluginDir, pluginName+".so")
+	pluginPath := filepath.Join(p.pluginDir, pluginName+".lua")
 	
 	file, err := os.Open(pluginPath)
 	if err != nil {

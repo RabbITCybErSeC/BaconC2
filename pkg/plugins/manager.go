@@ -2,6 +2,8 @@ package plugins
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 
 	command_handler "github.com/RabbITCybErSeC/BaconC2/pkg/commands/handlers"
@@ -18,13 +20,13 @@ type PluginManager struct {
 	config          map[string]interface{}
 }
 
-// NewPluginManager creates a new plugin manager with filesystem-based loader
+// NewPluginManager creates a new plugin manager with Lua-based loader
 func NewPluginManager(
 	pluginDir string,
 	commandRegistry *command_handler.CommandHandlerRegistry,
 	agentState command_handler.IAgentState,
 ) *PluginManager {
-	loader := NewNativePluginLoader(pluginDir)
+	loader := NewLuaPluginLoader(pluginDir)
 	registry := NewPluginRegistry(loader)
 
 	return &PluginManager{
@@ -35,12 +37,12 @@ func NewPluginManager(
 	}
 }
 
-// NewDynamicPluginManager creates a plugin manager with dynamic loader for runtime plugin installation
+// NewDynamicPluginManager creates a plugin manager with Lua loader for runtime plugin installation
 func NewDynamicPluginManager(
 	commandRegistry *command_handler.CommandHandlerRegistry,
 	agentState command_handler.IAgentState,
 ) *PluginManager {
-	loader := NewDynamicPluginLoader()
+	loader := NewLuaPluginLoader("")
 	registry := NewPluginRegistry(loader)
 
 	return &PluginManager{
@@ -239,15 +241,18 @@ func (m *PluginManager) Shutdown() error {
 	return nil
 }
 
-// ScanAndLoadPlugins scans the plugin directory and loads all plugins
-// Only works with filesystem-based loaders (NativePluginLoader)
+// ScanAndLoadPlugins scans the plugin directory and loads all Lua plugins
 func (m *PluginManager) ScanAndLoadPlugins() error {
-	nativeLoader := m.registry.GetNativeLoader()
-	if nativeLoader == nil {
-		return fmt.Errorf("ScanAndLoadPlugins only supported for filesystem-based loaders")
+	luaLoader, ok := m.registry.GetLoader().(*LuaPluginLoader)
+	if !ok {
+		return fmt.Errorf("ScanAndLoadPlugins only supported for Lua loaders")
 	}
 
-	plugins, err := nativeLoader.ScanPluginDirectory()
+	if luaLoader.pluginDir == "" {
+		return fmt.Errorf("no plugin directory configured")
+	}
+
+	plugins, err := scanLuaPluginDirectory(luaLoader.pluginDir)
 	if err != nil {
 		return fmt.Errorf("failed to scan plugin directory: %w", err)
 	}
@@ -261,40 +266,34 @@ func (m *PluginManager) ScanAndLoadPlugins() error {
 	return nil
 }
 
-// RegisterPluginDynamic registers a pre-instantiated plugin (for dynamic loaders only)
-func (m *PluginManager) RegisterPluginDynamic(name string, plugin IPlugin) error {
-	dynamicLoader, ok := m.registry.GetLoader().(*DynamicPluginLoader)
-	if !ok {
-		return fmt.Errorf("RegisterPluginDynamic only supported for dynamic loaders")
-	}
-
-	if err := dynamicLoader.RegisterPlugin(name, plugin); err != nil {
-		return err
-	}
-
-	// Initialize and register the plugin with the command registry
-	ctx := &PluginContext{
-		AgentState: m.agentState,
-		Registry:   m.commandRegistry,
-		Config:     m.config,
-	}
-
-	if err := plugin.Initialize(ctx); err != nil {
-		return fmt.Errorf("failed to initialize plugin '%s': %w", name, err)
-	}
-
-	// Register command handler
-	if err := m.registerCommandHandler(plugin); err != nil {
-		return fmt.Errorf("failed to register command handler: %w", err)
-	}
-
-	logging.Info("Plugin registered in memory: %s", name)
-	return nil
-}
 
 // getPluginNameFromPath extracts plugin name from file path
 func (m *PluginManager) getPluginNameFromPath(filePath string) string {
 	// This is a helper - actual name comes from plugin metadata
 	// Just used for initial lookup
 	return filePath
+}
+
+// scanLuaPluginDirectory scans directory for .lua files
+func scanLuaPluginDirectory(pluginDir string) ([]string, error) {
+	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
+		return []string{}, nil
+	}
+
+	entries, err := os.ReadDir(pluginDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read plugin directory: %w", err)
+	}
+
+	plugins := make([]string, 0)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if filepath.Ext(entry.Name()) == ".lua" {
+			plugins = append(plugins, filepath.Join(pluginDir, entry.Name()))
+		}
+	}
+
+	return plugins, nil
 }
