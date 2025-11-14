@@ -11,7 +11,7 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	lua "github.com/yuin/gopher-lua"
-	"layeh.com/gopher-luar"
+	luar "layeh.com/gopher-luar"
 )
 
 type LuaPluginLoader struct {
@@ -28,7 +28,7 @@ type LuaPlugin struct {
 	context  *PluginContext
 }
 
-func NewLuaPluginLoader(pluginDir string) *LuaPluginLoader {
+func NewLuaPluginLoader(pluginDir string) IPluginLoader {
 	return &LuaPluginLoader{
 		instances: make(map[string]*LuaPlugin),
 		pluginDir: pluginDir,
@@ -63,7 +63,7 @@ func (l *LuaPluginLoader) loadFromBytesUnlocked(name string, data []byte) (IPlug
 	}
 
 	vm := lua.NewState()
-	
+
 	if err := vm.DoString(string(data)); err != nil {
 		vm.Close()
 		return nil, fmt.Errorf("failed to execute plugin script: %w", err)
