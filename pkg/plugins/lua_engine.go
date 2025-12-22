@@ -11,7 +11,6 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	lua "github.com/yuin/gopher-lua"
-	luar "layeh.com/gopher-luar"
 )
 
 // LuaEngine is the Lua plugin execution engine
@@ -183,9 +182,19 @@ func (p *LuaPlugin) GetMetadata() PluginMetadata {
 func (p *LuaPlugin) Initialize(ctx *PluginContext) error {
 	p.context = ctx
 
-	p.vm.SetGlobal("agent_state", luar.New(p.vm, ctx.AgentState))
-	p.vm.SetGlobal("registry", luar.New(p.vm, ctx.Registry))
-	p.vm.SetGlobal("config", luar.New(p.vm, ctx.Config))
+	// Expose context objects as Lua tables with serialized JSON data
+	if ctx.AgentState != nil {
+		if agentStateJSON, err := json.Marshal(ctx.AgentState); err == nil {
+			if agentStateTable, err := p.jsonToLuaTable(string(agentStateJSON)); err == nil {
+				p.vm.SetGlobal("agent_state", agentStateTable)
+			}
+		}
+	}
+
+	// Registry and Config are exposed as empty tables since they're complex Go objects
+	// Plugins should use the execute function to interact with the system
+	p.vm.SetGlobal("registry", p.vm.NewTable())
+	p.vm.SetGlobal("config", p.vm.NewTable())
 
 	initFn := p.vm.GetGlobal("initialize")
 	if initFn != lua.LNil {

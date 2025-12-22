@@ -17,13 +17,6 @@ type PluginStore struct {
 	engine  IPluginEngine
 }
 
-// PluginEntry wraps a plugin with additional metadata
-type PluginEntry struct {
-	Plugin   IPlugin
-	FilePath string
-	LoadedAt time.Time
-}
-
 // NewPluginStore creates a new plugin store
 func NewPluginStore(engine IPluginEngine) *PluginStore {
 	return &PluginStore{

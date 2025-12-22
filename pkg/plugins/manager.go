@@ -14,7 +14,7 @@ import (
 // PluginService handles plugin lifecycle and integration with the command system
 // It provides the high-level API for plugin operations
 type PluginService struct {
-	store           *PluginStore
+	store           IPluginStore
 	commandRegistry *command_handler.CommandHandlerRegistry
 	agentState      command_handler.IAgentState
 	mu              sync.RWMutex
@@ -55,7 +55,7 @@ func NewDynamicPluginService(
 }
 
 // GetStore returns the plugin store
-func (m *PluginService) GetStore() *PluginStore {
+func (m *PluginService) GetStore() IPluginStore {
 	return m.store
 }
 

@@ -70,6 +70,13 @@ type PluginInfo struct {
 	Hash     string         `json:"hash"`
 }
 
+// PluginEntry wraps a plugin with additional metadata
+type PluginEntry struct {
+	Plugin   IPlugin
+	FilePath string
+	LoadedAt time.Time
+}
+
 // IPluginEngine defines the interface for plugin execution engines
 // An engine is responsible for loading, executing, and managing plugin instances
 type IPluginEngine interface {
@@ -78,4 +85,22 @@ type IPluginEngine interface {
 	Unload(identifier string) error
 	LoadFromFile(filePath string) (IPlugin, error)
 	LoadFromBytes(name string, data []byte) (IPlugin, error)
+}
+
+// IPluginStore defines the interface for plugin storage and management
+// A store manages loaded plugins, tracks dependencies, and provides query capabilities
+type IPluginStore interface {
+	LoadFromFile(filePath string, ctx *PluginContext) error
+	LoadFromBytes(name string, data []byte, ctx *PluginContext) error
+	Unload(name string) error
+	Get(name string) (IPlugin, bool)
+	GetEntry(name string) (*PluginEntry, bool)
+	GetAll() map[string]IPlugin
+	GetAllEntries() map[string]*PluginEntry
+	IsLoaded(name string) bool
+	Count() int
+	LoadOrder() []string
+	GetByCapability(capability PluginCapability) []IPlugin
+	GetEngine() IPluginEngine
+	GetLuaEngine() *LuaEngine
 }

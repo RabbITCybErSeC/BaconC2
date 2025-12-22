@@ -82,6 +82,7 @@ func main() {
 	// Plugin fetching is only available if the transport implements IPluginFetcher
 	// For now: Not all transports can support this (e.g., UDP, DNS, ICMP)
 	var pluginCommands *clientplugins.ClientPluginCommands
+
 	if fetcher, ok := httpTransport.(transport.IPluginFetcher); ok {
 		pluginCommands = clientplugins.NewPluginCommands(pluginService, fetcher)
 		commandRegistry.RegisterHandler(command_handler.CommandHandler{
