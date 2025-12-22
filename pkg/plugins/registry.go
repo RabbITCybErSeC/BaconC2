@@ -8,12 +8,13 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 )
 
-// PluginRegistry manages all loaded plugins in memory
-type PluginRegistry struct {
+// PluginStore manages all loaded plugins in memory
+// It tracks plugin entries, load order, and dependencies
+type PluginStore struct {
 	mu      sync.RWMutex
 	plugins map[string]*PluginEntry
 	order   []string // Track load order for dependency management
-	loader  IPluginLoader
+	engine  IPluginEngine
 }
 
 // PluginEntry wraps a plugin with additional metadata
@@ -23,22 +24,22 @@ type PluginEntry struct {
 	LoadedAt time.Time
 }
 
-// NewPluginRegistry creates a new plugin registry
-func NewPluginRegistry(loader IPluginLoader) *PluginRegistry {
-	return &PluginRegistry{
+// NewPluginStore creates a new plugin store
+func NewPluginStore(engine IPluginEngine) *PluginStore {
+	return &PluginStore{
 		plugins: make(map[string]*PluginEntry),
 		order:   make([]string, 0),
-		loader:  loader,
+		engine:  engine,
 	}
 }
 
 // LoadFromFile loads a plugin from a file path
-func (r *PluginRegistry) LoadFromFile(filePath string, ctx *PluginContext) error {
+func (r *PluginStore) LoadFromFile(filePath string, ctx *PluginContext) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Load the plugin using the native loader
-	plugin, err := r.loader.LoadFromFile(filePath)
+	// Load the plugin using the engine
+	plugin, err := r.engine.LoadFromFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to load plugin: %w", err)
 	}
@@ -77,12 +78,12 @@ func (r *PluginRegistry) LoadFromFile(filePath string, ctx *PluginContext) error
 }
 
 // LoadFromBytes loads a plugin from bytes
-func (r *PluginRegistry) LoadFromBytes(name string, data []byte, ctx *PluginContext) error {
+func (r *PluginStore) LoadFromBytes(name string, data []byte, ctx *PluginContext) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Load the plugin using the native loader
-	plugin, err := r.loader.LoadFromBytes(name, data)
+	// Load the plugin using the engine
+	plugin, err := r.engine.LoadFromBytes(name, data)
 	if err != nil {
 		return fmt.Errorf("failed to load plugin from bytes: %w", err)
 	}
@@ -121,7 +122,7 @@ func (r *PluginRegistry) LoadFromBytes(name string, data []byte, ctx *PluginCont
 }
 
 // Unload deactivates and removes a plugin
-func (r *PluginRegistry) Unload(name string) error {
+func (r *PluginStore) Unload(name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -147,8 +148,8 @@ func (r *PluginRegistry) Unload(name string) error {
 		}
 	}
 
-	// Unload from native loader
-	if err := r.loader.Unload(entry.FilePath); err != nil {
+	// Unload from engine
+	if err := r.engine.Unload(entry.FilePath); err != nil {
 		return fmt.Errorf("failed to unload plugin: %w", err)
 	}
 
@@ -168,7 +169,7 @@ func (r *PluginRegistry) Unload(name string) error {
 }
 
 // Get retrieves a plugin by name
-func (r *PluginRegistry) Get(name string) (IPlugin, bool) {
+func (r *PluginStore) Get(name string) (IPlugin, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -180,7 +181,7 @@ func (r *PluginRegistry) Get(name string) (IPlugin, bool) {
 }
 
 // GetEntry retrieves a plugin entry by name
-func (r *PluginRegistry) GetEntry(name string) (*PluginEntry, bool) {
+func (r *PluginStore) GetEntry(name string) (*PluginEntry, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -189,7 +190,7 @@ func (r *PluginRegistry) GetEntry(name string) (*PluginEntry, bool) {
 }
 
 // GetAll returns all loaded plugins
-func (r *PluginRegistry) GetAll() map[string]IPlugin {
+func (r *PluginStore) GetAll() map[string]IPlugin {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -201,7 +202,7 @@ func (r *PluginRegistry) GetAll() map[string]IPlugin {
 }
 
 // GetAllEntries returns all plugin entries
-func (r *PluginRegistry) GetAllEntries() map[string]*PluginEntry {
+func (r *PluginStore) GetAllEntries() map[string]*PluginEntry {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -213,7 +214,7 @@ func (r *PluginRegistry) GetAllEntries() map[string]*PluginEntry {
 }
 
 // IsLoaded checks if a plugin is currently loaded
-func (r *PluginRegistry) IsLoaded(name string) bool {
+func (r *PluginStore) IsLoaded(name string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -222,14 +223,14 @@ func (r *PluginRegistry) IsLoaded(name string) bool {
 }
 
 // Count returns the total number of loaded plugins
-func (r *PluginRegistry) Count() int {
+func (r *PluginStore) Count() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.plugins)
 }
 
 // LoadOrder returns the order in which plugins were loaded
-func (r *PluginRegistry) LoadOrder() []string {
+func (r *PluginStore) LoadOrder() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -239,7 +240,7 @@ func (r *PluginRegistry) LoadOrder() []string {
 }
 
 // GetByCapability returns all plugins with a specific capability
-func (r *PluginRegistry) GetByCapability(capability PluginCapability) []IPlugin {
+func (r *PluginStore) GetByCapability(capability PluginCapability) []IPlugin {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -256,15 +257,15 @@ func (r *PluginRegistry) GetByCapability(capability PluginCapability) []IPlugin 
 	return plugins
 }
 
-// GetLoader returns the plugin loader
-func (r *PluginRegistry) GetLoader() IPluginLoader {
-	return r.loader
+// GetEngine returns the plugin engine
+func (r *PluginStore) GetEngine() IPluginEngine {
+	return r.engine
 }
 
-// GetLuaLoader returns the Lua plugin loader if available
-func (r *PluginRegistry) GetLuaLoader() *LuaPluginLoader {
-	if luaLoader, ok := r.loader.(*LuaPluginLoader); ok {
-		return luaLoader
+// GetLuaEngine returns the Lua engine if available
+func (r *PluginStore) GetLuaEngine() *LuaEngine {
+	if luaEngine, ok := r.engine.(*LuaEngine); ok {
+		return luaEngine
 	}
 	return nil
 }

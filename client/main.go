@@ -77,13 +77,13 @@ func main() {
 	commandRegistry.RegisterStatefulHandler(filesystem.NewPwdHandler())
 	commandRegistry.RegisterStatefulHandler(filesystem.NewLsHandler())
 
-	pluginManager := plugins.NewDynamicPluginManager(commandRegistry, agentState)
+	pluginService := plugins.NewDynamicPluginService(commandRegistry, agentState)
 
 	// Plugin fetching is only available if the transport implements IPluginFetcher
 	// For now: Not all transports can support this (e.g., UDP, DNS, ICMP)
 	var pluginCommands *clientplugins.ClientPluginCommands
 	if fetcher, ok := httpTransport.(transport.IPluginFetcher); ok {
-		pluginCommands = clientplugins.NewPluginCommands(pluginManager, fetcher)
+		pluginCommands = clientplugins.NewPluginCommands(pluginService, fetcher)
 		commandRegistry.RegisterHandler(command_handler.CommandHandler{
 			Name:    "plugin_install",
 			Handler: pluginCommands.HandlePluginInstall,
@@ -104,10 +104,10 @@ func main() {
 			Name:    "plugin_info",
 			Handler: pluginCommands.HandlePluginInfo,
 		})
-		logging.Info("Plugin system initialized with remote fetching support (%d plugins loaded)", pluginManager.GetRegistry().Count())
+		logging.Info("Plugin system initialized with remote fetching support (%d plugins loaded)", pluginService.GetStore().Count())
 	} else {
 		logging.Warn("Transport does not support plugin fetching - plugin_install command unavailable")
-		logging.Info("Plugin system initialized in local-only mode (%d plugins loaded)", pluginManager.GetRegistry().Count())
+		logging.Info("Plugin system initialized in local-only mode (%d plugins loaded)", pluginService.GetStore().Count())
 	}
 
 	commandExecutor := executor.NewDefaultCommandExecutor(cmdQueue, resultQueue, httpTransport, wsTransport, cfg, commandRegistry, agentState)
@@ -134,7 +134,7 @@ func main() {
 	logging.Info("Shutting down agent...")
 
 	// Shutdown plugin system
-	if err := pluginManager.Shutdown(); err != nil {
+	if err := pluginService.Shutdown(); err != nil {
 		logging.Error("Error during plugin shutdown: %v", err)
 	}
 

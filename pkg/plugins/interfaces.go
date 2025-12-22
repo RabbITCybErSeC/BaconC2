@@ -43,9 +43,9 @@ type PluginMetadata struct {
 }
 
 type PluginContext struct {
-	AgentState   command_handler.IAgentState
-	Registry     *command_handler.CommandHandlerRegistry
-	Config       map[string]interface{}
+	AgentState command_handler.IAgentState
+	Registry   *command_handler.CommandHandlerRegistry
+	Config     map[string]interface{}
 }
 
 type IPlugin interface {
@@ -70,8 +70,9 @@ type PluginInfo struct {
 	Hash     string         `json:"hash"`
 }
 
-// IPluginLoader defines the interface for plugin loaders
-type IPluginLoader interface {
+// IPluginEngine defines the interface for plugin execution engines
+// An engine is responsible for loading, executing, and managing plugin instances
+type IPluginEngine interface {
 	GetInstance(identifier string) (IPlugin, bool)
 	ListLoaded() []string
 	Unload(identifier string) error

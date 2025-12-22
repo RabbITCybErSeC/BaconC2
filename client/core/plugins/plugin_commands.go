@@ -13,13 +13,13 @@ import (
 )
 
 type ClientPluginCommands struct {
-	manager *plugins.PluginManager
+	service *plugins.PluginService
 	fetcher transport.IPluginFetcher
 }
 
-func NewPluginCommands(manager *plugins.PluginManager, fetcher transport.IPluginFetcher) *ClientPluginCommands {
+func NewPluginCommands(service *plugins.PluginService, fetcher transport.IPluginFetcher) *ClientPluginCommands {
 	return &ClientPluginCommands{
-		manager: manager,
+		service: service,
 		fetcher: fetcher,
 	}
 }
@@ -108,7 +108,7 @@ func (pc *ClientPluginCommands) HandlePluginInstall(cmd models.Command) models.C
 		}
 	}
 
-	if err := pc.manager.LoadPluginFromBytes(pluginName, pluginData); err != nil {
+	if err := pc.service.LoadPluginFromBytes(pluginName, pluginData); err != nil {
 		return models.CommandResult{
 			ID:         cmd.ID,
 			Status:     models.CommandStatusFailed,
@@ -137,7 +137,7 @@ func (pc *ClientPluginCommands) HandlePluginUnload(cmd models.Command) models.Co
 
 	pluginName := cmd.Args[0]
 
-	if err := pc.manager.UnloadPlugin(pluginName); err != nil {
+	if err := pc.service.UnloadPlugin(pluginName); err != nil {
 		return models.CommandResult{
 			ID:         cmd.ID,
 			Status:     models.CommandStatusFailed,
@@ -155,7 +155,7 @@ func (pc *ClientPluginCommands) HandlePluginUnload(cmd models.Command) models.Co
 }
 
 func (pc *ClientPluginCommands) HandlePluginList(cmd models.Command) models.CommandResult {
-	plugins := pc.manager.ListPlugins()
+	plugins := pc.service.ListPlugins()
 
 	if len(plugins) == 0 {
 		return models.CommandResult{
@@ -196,7 +196,7 @@ func (pc *ClientPluginCommands) HandlePluginStatus(cmd models.Command) models.Co
 
 	pluginName := cmd.Args[0]
 
-	status, err := pc.manager.GetPluginStatus(pluginName)
+	status, err := pc.service.GetPluginStatus(pluginName)
 	if err != nil {
 		return models.CommandResult{
 			ID:         cmd.ID,
@@ -226,7 +226,7 @@ func (pc *ClientPluginCommands) HandlePluginInfo(cmd models.Command) models.Comm
 
 	pluginName := cmd.Args[0]
 
-	plugin, exists := pc.manager.GetRegistry().Get(pluginName)
+	plugin, exists := pc.service.GetStore().Get(pluginName)
 	if !exists {
 		return models.CommandResult{
 			ID:         cmd.ID,

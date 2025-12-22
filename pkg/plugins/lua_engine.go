@@ -14,7 +14,9 @@ import (
 	luar "layeh.com/gopher-luar"
 )
 
-type LuaPluginLoader struct {
+// LuaEngine is the Lua plugin execution engine
+// It loads Lua scripts into VMs and manages their lifecycle
+type LuaEngine struct {
 	mu        sync.RWMutex
 	instances map[string]*LuaPlugin
 	pluginDir string
@@ -28,14 +30,15 @@ type LuaPlugin struct {
 	context  *PluginContext
 }
 
-func NewLuaPluginLoader(pluginDir string) IPluginLoader {
-	return &LuaPluginLoader{
+// NewLuaEngine creates a new Lua plugin execution engine
+func NewLuaEngine(pluginDir string) IPluginEngine {
+	return &LuaEngine{
 		instances: make(map[string]*LuaPlugin),
 		pluginDir: pluginDir,
 	}
 }
 
-func (l *LuaPluginLoader) LoadFromFile(filePath string) (IPlugin, error) {
+func (l *LuaEngine) LoadFromFile(filePath string) (IPlugin, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -50,14 +53,14 @@ func (l *LuaPluginLoader) LoadFromFile(filePath string) (IPlugin, error) {
 	return l.loadFromBytesUnlocked(name, data)
 }
 
-func (l *LuaPluginLoader) LoadFromBytes(name string, data []byte) (IPlugin, error) {
+func (l *LuaEngine) LoadFromBytes(name string, data []byte) (IPlugin, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	return l.loadFromBytesUnlocked(name, data)
 }
 
-func (l *LuaPluginLoader) loadFromBytesUnlocked(name string, data []byte) (IPlugin, error) {
+func (l *LuaEngine) loadFromBytesUnlocked(name string, data []byte) (IPlugin, error) {
 	if _, exists := l.instances[name]; exists {
 		return nil, fmt.Errorf("plugin '%s' already loaded", name)
 	}
@@ -99,7 +102,7 @@ func (l *LuaPluginLoader) loadFromBytesUnlocked(name string, data []byte) (IPlug
 	return plugin, nil
 }
 
-func (l *LuaPluginLoader) parseMetadata(vm *lua.LState, table *lua.LTable) (PluginMetadata, error) {
+func (l *LuaEngine) parseMetadata(vm *lua.LState, table *lua.LTable) (PluginMetadata, error) {
 	metadata := PluginMetadata{
 		Capabilities: []PluginCapability{},
 		Dependencies: []string{},
@@ -134,7 +137,7 @@ func (l *LuaPluginLoader) parseMetadata(vm *lua.LState, table *lua.LTable) (Plug
 	return metadata, nil
 }
 
-func (l *LuaPluginLoader) Unload(identifier string) error {
+func (l *LuaEngine) Unload(identifier string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -154,7 +157,7 @@ func (l *LuaPluginLoader) Unload(identifier string) error {
 	return nil
 }
 
-func (l *LuaPluginLoader) GetInstance(identifier string) (IPlugin, bool) {
+func (l *LuaEngine) GetInstance(identifier string) (IPlugin, bool) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
@@ -162,7 +165,7 @@ func (l *LuaPluginLoader) GetInstance(identifier string) (IPlugin, bool) {
 	return instance, exists
 }
 
-func (l *LuaPluginLoader) ListLoaded() []string {
+func (l *LuaEngine) ListLoaded() []string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
