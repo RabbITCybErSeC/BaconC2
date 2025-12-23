@@ -8,16 +8,13 @@ import (
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 )
 
-// PluginStore manages all loaded plugins in memory
-// It tracks plugin entries, load order, and dependencies
 type PluginStore struct {
 	mu      sync.RWMutex
 	plugins map[string]*PluginEntry
-	order   []string // Track load order for dependency management
+	order   []string
 	engine  IPluginEngine
 }
 
-// NewPluginStore creates a new plugin store
 func NewPluginStore(engine IPluginEngine) *PluginStore {
 	return &PluginStore{
 		plugins: make(map[string]*PluginEntry),
@@ -26,8 +23,10 @@ func NewPluginStore(engine IPluginEngine) *PluginStore {
 	}
 }
 
-// LoadFromFile loads a plugin from a file path
 func (r *PluginStore) LoadFromFile(filePath string, ctx *PluginContext) error {
+	if filePath == "" {
+		return fmt.Errorf("file path cannot be empty")
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -39,24 +38,19 @@ func (r *PluginStore) LoadFromFile(filePath string, ctx *PluginContext) error {
 
 	metadata := plugin.GetMetadata()
 
-	// Check if already registered
 	if _, exists := r.plugins[metadata.Name]; exists {
 		return fmt.Errorf("plugin '%s' already loaded", metadata.Name)
 	}
-
-	// Check dependencies
 	for _, dep := range metadata.Dependencies {
 		if _, exists := r.plugins[dep]; !exists {
 			return fmt.Errorf("dependency '%s' not loaded for plugin '%s'", dep, metadata.Name)
 		}
 	}
 
-	// Initialize the plugin
 	if err := plugin.Initialize(ctx); err != nil {
 		return fmt.Errorf("failed to initialize plugin '%s': %w", metadata.Name, err)
 	}
 
-	// Register the plugin
 	entry := &PluginEntry{
 		Plugin:   plugin,
 		FilePath: filePath,
@@ -70,8 +64,13 @@ func (r *PluginStore) LoadFromFile(filePath string, ctx *PluginContext) error {
 	return nil
 }
 
-// LoadFromBytes loads a plugin from bytes
 func (r *PluginStore) LoadFromBytes(name string, data []byte, ctx *PluginContext) error {
+	if name == "" {
+		return fmt.Errorf("plugin name cannot be empty")
+	}
+	if len(data) == 0 {
+		return fmt.Errorf("plugin data cannot be empty")
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -83,24 +82,19 @@ func (r *PluginStore) LoadFromBytes(name string, data []byte, ctx *PluginContext
 
 	metadata := plugin.GetMetadata()
 
-	// Check if already registered
 	if _, exists := r.plugins[metadata.Name]; exists {
 		return fmt.Errorf("plugin '%s' already loaded", metadata.Name)
 	}
-
-	// Check dependencies
 	for _, dep := range metadata.Dependencies {
 		if _, exists := r.plugins[dep]; !exists {
 			return fmt.Errorf("dependency '%s' not loaded for plugin '%s'", dep, metadata.Name)
 		}
 	}
 
-	// Initialize the plugin
 	if err := plugin.Initialize(ctx); err != nil {
 		return fmt.Errorf("failed to initialize plugin '%s': %w", metadata.Name, err)
 	}
 
-	// Register the plugin
 	entry := &PluginEntry{
 		Plugin:   plugin,
 		FilePath: name,
@@ -114,17 +108,14 @@ func (r *PluginStore) LoadFromBytes(name string, data []byte, ctx *PluginContext
 	return nil
 }
 
-// Unload deactivates and removes a plugin
 func (r *PluginStore) Unload(name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	entry, exists := r.plugins[name]
-	if !exists {
+	if _, exists := r.plugins[name]; !exists {
 		return fmt.Errorf("plugin '%s' not found", name)
 	}
 
-	// Check if any loaded plugins depend on this one
 	for _, otherName := range r.order {
 		if otherName == name {
 			continue
@@ -141,15 +132,11 @@ func (r *PluginStore) Unload(name string) error {
 		}
 	}
 
-	// Unload from engine
-	if err := r.engine.Unload(entry.FilePath); err != nil {
+	if err := r.engine.Unload(name); err != nil {
 		return fmt.Errorf("failed to unload plugin: %w", err)
 	}
 
-	// Remove from registry
 	delete(r.plugins, name)
-
-	// Remove from load order
 	for i, n := range r.order {
 		if n == name {
 			r.order = append(r.order[:i], r.order[i+1:]...)
@@ -161,7 +148,6 @@ func (r *PluginStore) Unload(name string) error {
 	return nil
 }
 
-// Get retrieves a plugin by name
 func (r *PluginStore) Get(name string) (IPlugin, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -173,7 +159,6 @@ func (r *PluginStore) Get(name string) (IPlugin, bool) {
 	return entry.Plugin, true
 }
 
-// GetEntry retrieves a plugin entry by name
 func (r *PluginStore) GetEntry(name string) (*PluginEntry, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -182,7 +167,6 @@ func (r *PluginStore) GetEntry(name string) (*PluginEntry, bool) {
 	return entry, exists
 }
 
-// GetAll returns all loaded plugins
 func (r *PluginStore) GetAll() map[string]IPlugin {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -194,7 +178,6 @@ func (r *PluginStore) GetAll() map[string]IPlugin {
 	return plugins
 }
 
-// GetAllEntries returns all plugin entries
 func (r *PluginStore) GetAllEntries() map[string]*PluginEntry {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -206,7 +189,6 @@ func (r *PluginStore) GetAllEntries() map[string]*PluginEntry {
 	return entries
 }
 
-// IsLoaded checks if a plugin is currently loaded
 func (r *PluginStore) IsLoaded(name string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -215,14 +197,12 @@ func (r *PluginStore) IsLoaded(name string) bool {
 	return exists
 }
 
-// Count returns the total number of loaded plugins
 func (r *PluginStore) Count() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.plugins)
 }
 
-// LoadOrder returns the order in which plugins were loaded
 func (r *PluginStore) LoadOrder() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -232,7 +212,6 @@ func (r *PluginStore) LoadOrder() []string {
 	return order
 }
 
-// GetByCapability returns all plugins with a specific capability
 func (r *PluginStore) GetByCapability(capability PluginCapability) []IPlugin {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -250,12 +229,10 @@ func (r *PluginStore) GetByCapability(capability PluginCapability) []IPlugin {
 	return plugins
 }
 
-// GetEngine returns the plugin engine
 func (r *PluginStore) GetEngine() IPluginEngine {
 	return r.engine
 }
 
-// GetLuaEngine returns the Lua engine if available
 func (r *PluginStore) GetLuaEngine() *LuaEngine {
 	if luaEngine, ok := r.engine.(*LuaEngine); ok {
 		return luaEngine

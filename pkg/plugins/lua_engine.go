@@ -13,8 +13,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// LuaEngine is the Lua plugin execution engine
-// It loads Lua scripts into VMs and manages their lifecycle
 type LuaEngine struct {
 	mu        sync.RWMutex
 	instances map[string]*LuaPlugin
@@ -29,7 +27,6 @@ type LuaPlugin struct {
 	context  *PluginContext
 }
 
-// NewLuaEngine creates a new Lua plugin execution engine
 func NewLuaEngine(pluginDir string) IPluginEngine {
 	return &LuaEngine{
 		instances: make(map[string]*LuaPlugin),
@@ -60,9 +57,6 @@ func (l *LuaEngine) LoadFromBytes(name string, data []byte) (IPlugin, error) {
 }
 
 func (l *LuaEngine) loadFromBytesUnlocked(name string, data []byte) (IPlugin, error) {
-	if _, exists := l.instances[name]; exists {
-		return nil, fmt.Errorf("plugin '%s' already loaded", name)
-	}
 
 	vm := lua.NewState()
 
@@ -77,7 +71,13 @@ func (l *LuaEngine) loadFromBytesUnlocked(name string, data []byte) (IPlugin, er
 		return nil, fmt.Errorf("plugin missing 'metadata' table")
 	}
 
-	metadata, err := l.parseMetadata(vm, metadataTable.(*lua.LTable))
+	table, ok := metadataTable.(*lua.LTable)
+	if !ok {
+		vm.Close()
+		return nil, fmt.Errorf("metadata must be a table, got %s", metadataTable.Type())
+	}
+
+	metadata, err := l.parseMetadata(vm, table)
 	if err != nil {
 		vm.Close()
 		return nil, fmt.Errorf("failed to parse metadata: %w", err)
@@ -96,8 +96,12 @@ func (l *LuaEngine) loadFromBytesUnlocked(name string, data []byte) (IPlugin, er
 		status:   PluginStatusUnloaded,
 	}
 
-	l.instances[name] = plugin
-	logging.Info("Loaded Lua plugin from memory: %s (no filesystem access)", name)
+	if _, exists := l.instances[metadata.Name]; exists {
+		return nil, fmt.Errorf("plugin '%s' already loaded", metadata.Name)
+	}
+
+	l.instances[metadata.Name] = plugin
+	logging.Info("Loaded Lua plugin: %s", metadata.Name)
 	return plugin, nil
 }
 
