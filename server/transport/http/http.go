@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	ProtocolName = "http"
+	ProtocolName          = "http"
+	defaultBeaconInterval = 10
+	shutdownTimeout       = 5 * time.Second
 )
 
 type HTTPServerTransport struct {
@@ -32,7 +34,7 @@ type HTTPServerTransport struct {
 }
 
 func NewHTTPServerTransport(agentRepository db.IAgentRepository, commandQueue queue.IServerCommandQueue, httpConfig config.AgentHTTPConfig, engine *gin.Engine, pluginProvider transport.IPluginDataProvider) transport.ITransportProtocol {
-	as := &HTTPServerTransport{
+	ht := &HTTPServerTransport{
 		agentRepository:   agentRepository,
 		commandQueue:      commandQueue,
 		engine:            engine,
@@ -40,48 +42,57 @@ func NewHTTPServerTransport(agentRepository db.IAgentRepository, commandQueue qu
 		pluginDataHandler: NewPluginDataHandler(pluginProvider),
 	}
 
-	as.server = &http.Server{
+	ht.server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", httpConfig.Port),
-		Handler: as.engine,
+		Handler: ht.engine,
 	}
-	as.registerAgentRoutes()
+	ht.registerAgentRoutes()
 
-	return as
+	return ht
 }
 
-func (as *HTTPServerTransport) registerAgentRoutes() {
-	agentAPI := as.engine.Group("/api/v1/agents")
+func (ht *HTTPServerTransport) registerAgentRoutes() {
+	agentAPI := ht.engine.Group("/api/v1/agents")
 	{
 		agentAPI.Use(middleware.CorsMiddleware())
-		agentAPI.POST("/register", as.handleRegister)
-		agentAPI.POST("/beacon", as.handleBeacon)
-		agentAPI.POST("/results", as.handleCommandResult)
-		
-		agentAPI.GET("/plugins/metadata", as.pluginDataHandler.HandlePluginMetadata)
-		agentAPI.POST("/plugins/chunk", as.pluginDataHandler.HandlePluginChunk)
+		agentAPI.POST("/register", ht.handleRegister)
+		agentAPI.POST("/beacon", ht.handleBeacon)
+		agentAPI.POST("/results", ht.handleCommandResult)
+
+		agentAPI.GET("/plugins/metadata", ht.pluginDataHandler.HandlePluginMetadata)
+		agentAPI.POST("/plugins/chunk", ht.pluginDataHandler.HandlePluginChunk)
 	}
 }
 
-func (as *HTTPServerTransport) GinEngine() *gin.Engine {
-	return as.engine
+func (ht *HTTPServerTransport) GinEngine() *gin.Engine {
+	return ht.engine
 }
 
-func (as *HTTPServerTransport) handleRegister(c *gin.Context) {
-	var agent local_models.ServerAgentModel
-	var incomingAgent models.Agent
+func (ht *HTTPServerTransport) requireAgentID(c *gin.Context) (string, bool) {
+	agentID := c.Query("id")
+	if agentID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Agent ID required"})
+		return "", false
+	}
+	return agentID, true
+}
 
+func (ht *HTTPServerTransport) handleRegister(c *gin.Context) {
+	var incomingAgent models.Agent
 	if err := c.ShouldBindJSON(&incomingAgent); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	agent.Agent = incomingAgent
-	agent.Protocol = ProtocolName
-	agent.LastSeen = time.Now()
-	agent.IsActive = true
-	agent.Commands = []local_models.AgentCommand{}
+	incomingAgent.Protocol = ProtocolName
+	agent := local_models.ServerAgentModel{
+		Agent:    incomingAgent,
+		LastSeen: time.Now(),
+		IsActive: true,
+		Commands: []local_models.AgentCommand{},
+	}
 
-	if err := as.agentRepository.SaveAgent(c.Request.Context(), &agent); err != nil {
+	if err := ht.agentRepository.SaveAgent(c.Request.Context(), &agent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -89,26 +100,25 @@ func (as *HTTPServerTransport) handleRegister(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": "registered"})
 }
 
-func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
-	agentID := c.Query("id")
-
-	if agentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Agent ID required"})
+func (ht *HTTPServerTransport) handleBeacon(c *gin.Context) {
+	agentID, ok := ht.requireAgentID(c)
+	if !ok {
 		return
 	}
 
-	_, err := as.agentRepository.GetAgent(c.Request.Context(), agentID)
-	if err != nil {
+	ctx := c.Request.Context()
+
+	if _, err := ht.agentRepository.GetAgent(ctx, agentID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
 	}
 
-	if err := as.agentRepository.UpdateLastSeen(c.Request.Context(), agentID); err != nil {
+	if err := ht.agentRepository.UpdateLastSeen(ctx, agentID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update last seen: " + err.Error()})
 		return
 	}
 
-	commands, err := as.agentRepository.GetCommandsByStatus(c.Request.Context(), agentID, models.CommandStatusPending)
+	commands, err := ht.agentRepository.GetCommandsByStatus(ctx, agentID, models.CommandStatusPending)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -117,18 +127,15 @@ func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
 	if len(commands) > 0 {
 		cmd := commands[0]
 
-		if err := as.agentRepository.UpdateCommandStatus(c.Request.Context(), cmd.ID, models.CommandStatusSentToClient); err != nil {
-			c.JSON(http.StatusInternalServerError, models.HttpBeaconResponse{
-				Status:         models.CommandStatusFailed,
-				RequestResults: false,
-			})
+		if err := ht.agentRepository.UpdateCommandStatus(ctx, cmd.ID, models.CommandStatusSentToClient); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update command status"})
 			return
 		}
 
 		c.JSON(http.StatusOK, models.HttpBeaconResponse{
 			Command:        cmd.Command,
 			Status:         models.CommandStatusSentToClient,
-			NextBeacon:     10,
+			NextBeacon:     defaultBeaconInterval,
 			RequestResults: false,
 		})
 		return
@@ -136,15 +143,14 @@ func (as *HTTPServerTransport) handleBeacon(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.HttpBeaconResponse{
 		Status:         models.CommandStatusAck,
-		NextBeacon:     10,
+		NextBeacon:     defaultBeaconInterval,
 		RequestResults: false,
 	})
 }
 
-func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
-	agentID := c.Query("id")
-	if agentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Agent ID required"})
+func (ht *HTTPServerTransport) handleCommandResult(c *gin.Context) {
+	agentID, ok := ht.requireAgentID(c)
+	if !ok {
 		return
 	}
 
@@ -154,7 +160,9 @@ func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
 		return
 	}
 
-	if _, err := as.agentRepository.GetAgent(c.Request.Context(), agentID); err != nil {
+	ctx := c.Request.Context()
+
+	if _, err := ht.agentRepository.GetAgent(ctx, agentID); err != nil {
 		if errors.Is(err, db.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		} else {
@@ -170,14 +178,7 @@ func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
 			continue
 		}
 
-		err := as.agentRepository.UpdateCommandStatusWithResult(
-			c.Request.Context(),
-			agentID,
-			result.ID,
-			result.Status,
-			result.Output,
-		)
-
+		err := ht.agentRepository.UpdateCommandStatusWithResult(ctx, agentID, result.ID, result.Status, result.Output)
 		if err != nil {
 			log.Printf("Failed to save result for command %s from agent %s: %v", result.ID, agentID, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process command result for " + result.ID})
@@ -188,23 +189,25 @@ func (as *HTTPServerTransport) handleCommandResult(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "received"})
 }
 
-func (as *HTTPServerTransport) Start() error {
-	log.Printf("Starting HTTP transport on port %d", as.httpConfig.Port)
+func (ht *HTTPServerTransport) Start() error {
+	log.Printf("Starting HTTP transport on port %d", ht.httpConfig.Port)
 	go func() {
-		if err := as.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := ht.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("HTTP server error: %v", err)
 		}
 	}()
 	return nil
 }
 
-func (as *HTTPServerTransport) Stop() error {
-	if as.server != nil {
-		return as.server.Shutdown(context.Background())
+func (ht *HTTPServerTransport) Stop() error {
+	if ht.server == nil {
+		return nil
 	}
-	return nil
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	return ht.server.Shutdown(ctx)
 }
 
-func (as *HTTPServerTransport) Name() string {
+func (ht *HTTPServerTransport) Name() string {
 	return ProtocolName
 }
