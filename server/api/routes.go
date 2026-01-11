@@ -21,6 +21,7 @@ func RegisterFrontendRoutes(frontendHandler *FrontendHandler, config *config.Ser
 		frontendAPI.Use(middleware.CorsMiddleware())
 		frontendAPI.Use(JWTMiddleware(config))
 		frontendAPI.GET("/agents", frontendHandler.handleListAgents)
+		frontendAPI.GET("/plugins", frontendHandler.handleGetPlugins)
 	}
 }
 
